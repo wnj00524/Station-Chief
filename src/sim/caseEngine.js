@@ -1,5 +1,8 @@
 import { EventBus } from './eventBus.js';
 import { SimClock } from './clock.js';
+import { Scheduler } from './scheduler.js';
+import { resolveDecision } from './decisionResolver.js';
+import { projectCaseState } from './stateProjection.js';
 
 export class CaseEngine {
   constructor(caseData, options = {}) {
@@ -7,6 +10,7 @@ export class CaseEngine {
     this.bus = new EventBus();
     this.baseHour = Number(caseData.startTime.split(':')[0]);
     this.clock = new SimClock(this.baseHour * 60, options.tickMs || 1000);
+    this.scheduler = new Scheduler();
     this.state = {
       minute: 0,
       politicalCapital: caseData.startingPoliticalCapital,
@@ -20,20 +24,19 @@ export class CaseEngine {
       homeOfficeDebrief: null,
       mustUseAppsCount: 3
     };
-    this.scheduledEvents = [];
     this._seedEvents();
   }
 
   _seedEvents() {
-    this.caseData.intercepts.forEach((intercept) => {
-      this.scheduledEvents.push({
+    this.scheduler.scheduleMany(
+      this.caseData.intercepts.map((intercept) => ({
         atMinute: intercept.availableAtMinute,
         type: 'intercept',
         payload: intercept
-      });
-    });
+      }))
+    );
 
-    this.scheduledEvents.push({
+    this.scheduler.schedule({
       atMinute: this.caseData.decisionDeadlineMinutes,
       type: 'deadline',
       payload: { reason: 'Decision window expired' }
@@ -59,8 +62,8 @@ export class CaseEngine {
   }
 
   scheduleTask(taskId) {
-    const template = this.caseData.staffTemplates.find((t) => t.id === taskId);
-    if (!template || this.state.pendingTasks.some((t) => t.id === taskId) || this.state.completedTasks.some((t) => t.id === taskId)) {
+    const template = this.caseData.staffTemplates.find((task) => task.id === taskId);
+    if (!template || this.state.pendingTasks.some((task) => task.id === taskId) || this.state.completedTasks.some((task) => task.id === taskId)) {
       return false;
     }
 
@@ -84,8 +87,8 @@ export class CaseEngine {
       decisionId,
       caseData: this.caseData,
       minute: this.state.minute,
-      analystCompleted: this.state.completedTasks.some((t) => t.id === 'analyst_verify'),
-      surveillanceCompleted: this.state.completedTasks.some((t) => t.id === 'surveil_airport')
+      analystCompleted: this.state.completedTasks.some((task) => task.id === 'analyst_verify'),
+      surveillanceCompleted: this.state.completedTasks.some((task) => task.id === 'surveil_airport')
     });
 
     this.state.chosenDecisionId = decision.id;
@@ -115,52 +118,20 @@ export class CaseEngine {
   }
 
   _runScheduledEvents() {
-    const due = this.scheduledEvents.filter((evt) => evt.atMinute <= this.state.minute);
-    this.scheduledEvents = this.scheduledEvents.filter((evt) => evt.atMinute > this.state.minute);
-    due.forEach((evt) => {
-      if (evt.type === 'intercept') {
-        this.state.intercepts.push(evt.payload);
-        this.bus.emit('interceptCaptured', evt.payload);
+    const due = this.scheduler.popDue(this.state.minute);
+    due.forEach((event) => {
+      if (event.type === 'intercept') {
+        this.state.intercepts.push(event.payload);
+        this.bus.emit('interceptCaptured', event.payload);
       }
 
-      if (evt.type === 'deadline' && !this.state.chosenDecisionId) {
-        this.bus.emit('deadline', evt.payload);
+      if (event.type === 'deadline' && !this.state.chosenDecisionId) {
+        this.bus.emit('deadline', event.payload);
       }
     });
   }
 
   getPublicState() {
-    return {
-      ...this.state,
-      appCountMet: this.canDecide(),
-      displayTime: SimClock.format(this.baseHour * 60 + this.state.minute),
-      timeRemaining: Math.max(0, this.caseData.decisionDeadlineMinutes - this.state.minute)
-    };
+    return projectCaseState(this.state, this.caseData, this.baseHour);
   }
-}
-
-export function resolveDecision({ decisionId, caseData, minute, analystCompleted, surveillanceCompleted }) {
-  const selected = caseData.decisions.find((d) => d.id === decisionId);
-  if (!selected) throw new Error(`Unknown decision: ${decisionId}`);
-
-  if (selected.id === 'verify_then_airport' && !analystCompleted) {
-    return {
-      ...selected,
-      outcome: 'partial_success',
-      politicalCapitalDelta: 0,
-      debrief:
-        'Home Office: Redirect was directionally correct but moved without full verification. Results were mixed and politically neutral.'
-    };
-  }
-
-  if (selected.id === 'surveil_airport_now' && minute > caseData.decisionDeadlineMinutes - 2 && !surveillanceCompleted) {
-    return {
-      ...selected,
-      outcome: 'failure',
-      politicalCapitalDelta: -6,
-      debrief: 'Home Office: Surveillance order came too late. Target exfiltrated before team was in place.'
-    };
-  }
-
-  return selected;
 }
