@@ -1,0 +1,17 @@
+:root { color-scheme: dark; font-family: Ubuntu, system-ui, sans-serif; }
+body { margin: 0; background: #1e1f26; color: #ddd; }
+#desktop { display: grid; grid-template-columns: 140px 1fr; grid-template-rows: 44px 1fr; height: 100vh; }
+.topbar { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; background: #2b2d35; padding: 0 14px; border-bottom: 1px solid #3d414e; }
+.dock { background: #23252d; padding: 10px; display: flex; flex-direction: column; gap: 8px; border-right: 1px solid #3d414e; }
+.dock button { background: #3a3d4a; color: #eee; border: 1px solid #4f5467; padding: 8px; cursor: pointer; }
+#workspace { padding: 14px; overflow: auto; }
+.panel { background: #2b2d35; border: 1px solid #3d414e; padding: 12px; margin-bottom: 10px; }
+.thread-msg { border-left: 3px solid #6977ff; margin: 8px 0; padding-left: 8px; }
+.record { border-bottom: 1px solid #414652; padding: 6px 0; }
+.actions button { margin: 6px 6px 0 0; }
+#toasts { position: fixed; right: 14px; bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
+.toast { background: #171920; border: 1px solid #4f5467; padding: 8px 10px; max-width: 320px; }
+.bad { color: #ff8f8f; }
+.good { color: #98ffa2; }
+.warn { color: #ffd18a; }
+.small { font-size: 0.9rem; opacity: 0.9; }
