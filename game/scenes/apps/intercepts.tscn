@@ -11,15 +11,55 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_10jjm")
 
-[node name="Label" type="Label" parent="."]
+[node name="Margin" type="MarginContainer" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -126.0
-offset_top = -10.5
-offset_right = 126.0
-offset_bottom = 10.5
-text = "Intercepts app placeholder"
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="HBox" type="HBoxContainer" parent="Margin"]
+layout_mode = 2
+
+[node name="InterceptsList" type="ItemList" parent="Margin/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="InterceptPanel" type="PanelContainer" parent="Margin/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="InterceptMargin" type="MarginContainer" parent="Margin/HBox/InterceptPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="InterceptVBox" type="VBoxContainer" parent="Margin/HBox/InterceptPanel/InterceptMargin"]
+layout_mode = 2
+
+[node name="InterceptChannelValue" type="Label" parent="Margin/HBox/InterceptPanel/InterceptMargin/InterceptVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "CHANNEL"
+
+[node name="InterceptTimestampValue" type="Label" parent="Margin/HBox/InterceptPanel/InterceptMargin/InterceptVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "TIME"
+
+[node name="InterceptSummaryValue" type="RichTextLabel" parent="Margin/HBox/InterceptPanel/InterceptMargin/InterceptVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+text = "Summary"
+
+[connection signal="item_selected" from="Margin/HBox/InterceptsList" to="." method="_on_intercepts_list_item_selected"]

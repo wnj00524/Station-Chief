@@ -11,16 +11,47 @@
     "true_handoff_location": "airport_perimeter",
     "rival_faction": "HIA"
   },
-  "player_actions": [
-    "trust_and_proceed",
-    "assign_analyst_verify",
-    "task_surveillance_airport",
-    "abort_or_delay"
+  "content_files": {
+    "inbox": "inbox_messages.json",
+    "nominals": "nominals.json",
+    "intercepts": "intercepts.json",
+    "map_markers": "map_markers.json"
+  },
+  "scheduled_events": [
+    {
+      "time_minutes": 488,
+      "topic": "intel_ping",
+      "payload": {
+        "source": "SIGINT",
+        "message": "Additional metadata sweep requested by HQ."
+      }
+    }
   ],
+  "decision": {
+    "consequence_delay_minutes": 20,
+    "action_outcome": {
+      "trust_and_proceed": "failure",
+      "assign_analyst_verify": "partial",
+      "task_surveillance_airport": "best",
+      "abort_or_delay": "defensive"
+    }
+  },
   "outcomes": {
-    "best": { "political_capital_delta": 2 },
-    "partial": { "political_capital_delta": 1 },
-    "failure": { "political_capital_delta": -2 },
-    "defensive": { "political_capital_delta": -1 }
+    "best": {
+      "political_capital_delta": 2,
+      "summary": "Airport team captures the real handoff thread. Falcon's compromise is confirmed and an HIA logistics lead is preserved."
+    },
+    "partial": {
+      "political_capital_delta": 1,
+      "summary": "Verification exposes the cafe report as bait, but response lag allows part of the handoff to slip."
+    },
+    "failure": {
+      "political_capital_delta": -2,
+      "summary": "Station commits to the cafe claim and misses the airport exchange, damaging credibility and exposing Falcon's channel."
+    },
+    "defensive": {
+      "political_capital_delta": -1,
+      "summary": "You avoid the trap by halting action, but lose initiative and return no actionable lead."
+    }
   }
 }

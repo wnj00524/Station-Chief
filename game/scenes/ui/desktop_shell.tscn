@@ -33,6 +33,7 @@ theme_override_constants/margin_bottom = 8
 layout_mode = 2
 
 [node name="ClockLabel" type="Label" parent="TopBar/TopBarMargin/TopBarRow"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Local 08:00"
 
@@ -43,6 +44,7 @@ horizontal_alignment = 1
 text = "CONN: STABLE"
 
 [node name="PoliticalCapitalLabel" type="Label" parent="TopBar/TopBarMargin/TopBarRow"]
+unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 2
 text = "POLITICAL CAPITAL: 0"
@@ -61,26 +63,75 @@ grow_vertical = 2
 layout_mode = 2
 custom_minimum_size = Vector2(240, 0)
 
-[node name="DockVBox" type="VBoxContainer" parent="Body/Dock"]
+[node name="DockMargin" type="MarginContainer" parent="Body/Dock"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="DockVBox" type="VBoxContainer" parent="Body/Dock/DockMargin"]
 layout_mode = 2
 
-[node name="AppLaunchersLabel" type="Label" parent="Body/Dock/DockVBox"]
+[node name="AppLaunchersLabel" type="Label" parent="Body/Dock/DockMargin/DockVBox"]
 layout_mode = 2
 text = "APPS"
+
+[node name="LauncherInbox" type="Button" parent="Body/Dock/DockMargin/DockVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Inbox"
+
+[node name="LauncherNominals" type="Button" parent="Body/Dock/DockMargin/DockVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Nominals"
+
+[node name="LauncherIntercepts" type="Button" parent="Body/Dock/DockMargin/DockVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Intercepts"
+
+[node name="LauncherMap" type="Button" parent="Body/Dock/DockMargin/DockVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Map"
+
+[node name="LauncherStaff" type="Button" parent="Body/Dock/DockMargin/DockVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Staff"
+
+[node name="FeedLabel" type="Label" parent="Body/Dock/DockMargin/DockVBox"]
+layout_mode = 2
+text = "OPS FEED"
+
+[node name="FeedLog" type="RichTextLabel" parent="Body/Dock/DockMargin/DockVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 220)
+layout_mode = 2
+size_flags_vertical = 3
+scroll_following = true
 
 [node name="DesktopWorkspace" type="PanelContainer" parent="Body"]
 layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="WorkspaceTabs" type="TabContainer" parent="Body/DesktopWorkspace"]
+unique_name_in_owner = true
 layout_mode = 2
 
 [node name="Inbox" parent="Body/DesktopWorkspace/WorkspaceTabs" instance=ExtResource("2_4blx5")]
+unique_name_in_owner = true
 
 [node name="Nominals" parent="Body/DesktopWorkspace/WorkspaceTabs" instance=ExtResource("3_ub6jo")]
+unique_name_in_owner = true
 
 [node name="Intercepts" parent="Body/DesktopWorkspace/WorkspaceTabs" instance=ExtResource("4_5sggl")]
+unique_name_in_owner = true
 
 [node name="Map" parent="Body/DesktopWorkspace/WorkspaceTabs" instance=ExtResource("5_y0m3o")]
+unique_name_in_owner = true
 
 [node name="StaffPanel" parent="Body/DesktopWorkspace/WorkspaceTabs" instance=ExtResource("6_p8pi1")]
+unique_name_in_owner = true
