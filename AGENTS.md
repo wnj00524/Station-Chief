@@ -1,5 +1,32 @@
 # STATION_CHIEF Agent Instructions
 
+## Engine target
+Use Godot 4.x for all runtime implementation.
+
+## Runtime location
+The playable prototype lives in /game.
+
+## Read first
+1. docs/vertical-slice-brief.md
+2. docs/gdd-overview.md
+3. docs/design/core-loop.md
+4. docs/design/desktop-ux.md
+5. docs/architecture/simulation-model.md
+6. docs/content/case-falcon-meeting.md
+
+## Build priority
+1. Create a valid Godot project with a main scene.
+2. Build the desktop shell.
+3. Build the hidden-truth/time/event systems.
+4. Implement The Falcon Meeting case.
+5. Wire Inbox, Nominals, Intercepts, Map, and Staff panel.
+
+## Guardrails
+- Build only the vertical slice.
+- No web frontend.
+- No campaign systems.
+- No procedural generation beyond what the brief requires.
+
 ## Source-of-truth hierarchy
 1. `docs/vertical-slice-brief.md` — implementation contract for the first playable prototype
 2. `docs/gdd-overview.md` — distilled project vision and pillars
