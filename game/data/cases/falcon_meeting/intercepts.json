@@ -1,0 +1,14 @@
+[
+  {
+    "id": "intercept_route_shift",
+    "timestamp": "08:05",
+    "channel": "SIGINT-META",
+    "summary": "Device associated with Falcon registered near airport perimeter."
+  },
+  {
+    "id": "intercept_ambiguous_handoff",
+    "timestamp": "08:07",
+    "channel": "VOICE-SCRAPE",
+    "summary": "Fragment references route change and handoff window."
+  }
+]

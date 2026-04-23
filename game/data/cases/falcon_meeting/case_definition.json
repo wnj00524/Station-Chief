@@ -1,0 +1,26 @@
+{
+  "id": "falcon_meeting",
+  "title": "The Falcon Meeting",
+  "session_target_minutes": 15,
+  "actors": ["falcon", "local_official", "hia_handler"],
+  "locations": ["cafe", "airport_perimeter", "official_residence"],
+  "starting_political_capital": 0,
+  "hidden_truth": {
+    "falcon_status": "compromised",
+    "bait_location": "cafe",
+    "true_handoff_location": "airport_perimeter",
+    "rival_faction": "HIA"
+  },
+  "player_actions": [
+    "trust_and_proceed",
+    "assign_analyst_verify",
+    "task_surveillance_airport",
+    "abort_or_delay"
+  ],
+  "outcomes": {
+    "best": { "political_capital_delta": 2 },
+    "partial": { "political_capital_delta": 1 },
+    "failure": { "political_capital_delta": -2 },
+    "defensive": { "political_capital_delta": -1 }
+  }
+}

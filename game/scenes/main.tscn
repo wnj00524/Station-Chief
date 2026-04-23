@@ -1,0 +1,17 @@
+[gd_scene load_steps=5 format=3 uid="uid://c0b8q5f8x3v11"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_2lhf4"]
+[ext_resource type="PackedScene" path="res://scenes/ui/desktop_shell.tscn" id="2_u2h7m"]
+[ext_resource type="Script" path="res://scripts/core/clock.gd" id="3_6rc2f"]
+[ext_resource type="Script" path="res://scripts/core/event_bus.gd" id="4_yb3l6"]
+
+[node name="Main" type="Node"]
+script = ExtResource("1_2lhf4")
+
+[node name="Clock" type="Node" parent="."]
+script = ExtResource("3_6rc2f")
+
+[node name="EventBus" type="Node" parent="."]
+script = ExtResource("4_yb3l6")
+
+[node name="DesktopShell" parent="." instance=ExtResource("2_u2h7m")]

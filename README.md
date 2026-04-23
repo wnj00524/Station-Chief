@@ -1,17 +1,14 @@
-# STATION_CHIEF Codex Kit
+# STATION_CHIEF — Godot Vertical Slice Scaffold
 
-This repository skeleton is prepared for Codex-driven prototyping.
+This repository is now structured as a Godot 4.x-first vertical-slice project.
 
-## What this contains
-- `docs/` — chunked design and production context
-- `AGENTS.md` — project-level instructions for Codex
-- `game/` — starter runtime folders for the prototype
-- `tests/` — placeholder for simulation and branching tests
-- `tools/` — placeholder for content and validation scripts
+## Runtime
+- `game/` is the Godot project root.
+- Open `game/project.godot` in Godot 4.x.
+- Main scene: `res://scenes/main.tscn`.
 
-## Recommended Codex usage
-Use `docs/vertical-slice-brief.md` as the build spec.
-Use `docs/gdd-overview.md` and the chunked docs as supporting context.
+## Design and implementation context
+- `docs/` remains the source-of-truth for vertical-slice requirements.
 
-### Good prompt pattern
-"Use `docs/vertical-slice-brief.md` as the implementation contract. Use `docs/gdd-overview.md` and relevant docs under `docs/` as supporting context. Build only the playable vertical slice, not the full game."
+## Legacy prototype
+- Previous web prototype artifacts are preserved under `legacy/web-prototype/`.
