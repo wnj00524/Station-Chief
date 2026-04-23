@@ -11,15 +11,61 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_lqb04")
 
-[node name="Label" type="Label" parent="."]
+[node name="Margin" type="MarginContainer" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -112.0
-offset_top = -10.5
-offset_right = 112.0
-offset_bottom = 10.5
-text = "Inbox app placeholder"
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="HBox" type="HBoxContainer" parent="Margin"]
+layout_mode = 2
+
+[node name="InboxMessageList" type="ItemList" parent="Margin/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MessagePanel" type="PanelContainer" parent="Margin/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MessageMargin" type="MarginContainer" parent="Margin/HBox/MessagePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="MessageVBox" type="VBoxContainer" parent="Margin/HBox/MessagePanel/MessageMargin"]
+layout_mode = 2
+
+[node name="InboxFromValue" type="Label" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "FROM: --"
+
+[node name="InboxSubjectValue" type="Label" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "SUBJECT: --"
+
+[node name="InboxTimestampValue" type="Label" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "TIME: --"
+
+[node name="InboxBodyValue" type="RichTextLabel" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "Message body"
+
+[connection signal="item_selected" from="Margin/HBox/InboxMessageList" to="." method="_on_inbox_message_list_item_selected"]
