@@ -1,0 +1,12 @@
+[
+  {
+    "id": "local_official",
+    "name": "Local Official",
+    "notes": "Prior links to logistics entities operating near airport transit corridors."
+  },
+  {
+    "id": "hia_handler",
+    "name": "HIA Handler",
+    "notes": "Assessed intermediary for rival agency activity."
+  }
+]

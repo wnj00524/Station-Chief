@@ -1,0 +1,5 @@
+[
+  { "id": "cafe", "label": "Cafe", "x": 0.34, "y": 0.46 },
+  { "id": "airport_perimeter", "label": "Airport Perimeter", "x": 0.73, "y": 0.22 },
+  { "id": "official_residence", "label": "Official Residence", "x": 0.59, "y": 0.68 }
+]
