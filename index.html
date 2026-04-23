@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Station Chief — Falcon Slice</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="desktop">
+      <header class="topbar">
+        <div>STATION_CHIEF // DESKTOP 1</div>
+        <div id="clock">08:00</div>
+        <div id="pc">Political Capital: 50</div>
+      </header>
+      <aside class="dock">
+        <button data-app="inbox">Inbox</button>
+        <button data-app="nominals">Nominals</button>
+        <button data-app="intercepts">Intercepts</button>
+        <button data-app="map">Map</button>
+        <button data-app="staff">Staff Tasking</button>
+      </aside>
+      <main id="workspace"></main>
+      <section id="toasts"></section>
+    </div>
+    <script type="module" src="src/ui/app.js"></script>
+  </body>
+</html>
