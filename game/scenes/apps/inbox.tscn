@@ -68,4 +68,23 @@ size_flags_vertical = 3
 bbcode_enabled = true
 text = "Message body"
 
+[node name="TagRow" type="HBoxContainer" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox"]
+layout_mode = 2
+
+[node name="InboxTagInput" type="LineEdit" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox/TagRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Add tag"
+
+[node name="InboxAddTag" type="Button" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox/TagRow"]
+layout_mode = 2
+text = "Tag"
+
+[node name="InboxTagsValue" type="Label" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Tags: --"
+
 [connection signal="item_selected" from="Margin/HBox/InboxMessageList" to="." method="_on_inbox_message_list_item_selected"]
+[connection signal="pressed" from="Margin/HBox/MessagePanel/MessageMargin/MessageVBox/TagRow/InboxAddTag" to="." method="_on_inbox_add_tag_pressed"]

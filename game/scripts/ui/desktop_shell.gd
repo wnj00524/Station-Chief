@@ -1,25 +1,35 @@
 class_name DesktopShell
 extends Control
 
+const InboxScene: PackedScene = preload("res://scenes/apps/inbox.tscn")
+const NominalsScene: PackedScene = preload("res://scenes/apps/nominals.tscn")
+const InterceptsScene: PackedScene = preload("res://scenes/apps/intercepts.tscn")
+const MapScene: PackedScene = preload("res://scenes/apps/map.tscn")
+const StaffScene: PackedScene = preload("res://scenes/apps/staff_panel.tscn")
+const TerminalScene: PackedScene = preload("res://scenes/apps/terminal_stub.tscn")
+
 @onready var clock_label: Label = %ClockLabel
 @onready var political_capital_label: Label = %PoliticalCapitalLabel
 @onready var feed_log: RichTextLabel = %FeedLog
-@onready var workspace_tabs: TabContainer = %WorkspaceTabs
+@onready var desktop_area: Control = %DesktopArea
+@onready var taskbar: HBoxContainer = %Taskbar
+@onready var app_window_prototype: AppWindow = %AppWindowPrototype
+
 @onready var launcher_inbox: Button = %LauncherInbox
-@onready var launcher_nominals: Button = %LauncherNominals
+@onready var launcher_database: Button = %LauncherDatabase
 @onready var launcher_intercepts: Button = %LauncherIntercepts
 @onready var launcher_map: Button = %LauncherMap
 @onready var launcher_staff: Button = %LauncherStaff
-@onready var inbox_app: Control = %Inbox
-@onready var nominals_app: Control = %Nominals
-@onready var intercepts_app: Control = %Intercepts
-@onready var map_app: Control = %Map
-@onready var staff_app: Control = %StaffPanel
+@onready var launcher_terminal: Button = %LauncherTerminal
 
 var _clock
 var _event_bus
 var _game_state
 var _case_runner
+
+var _app_windows: Dictionary = {}
+var _app_instances: Dictionary = {}
+var _minimized_buttons: Dictionary = {}
 
 func bind_systems(clock, event_bus, game_state, case_runner) -> void:
 	_clock = clock
@@ -33,29 +43,84 @@ func bind_systems(clock, event_bus, game_state, case_runner) -> void:
 	_game_state.station_report_ready.connect(_on_station_report_ready)
 	_case_runner.decision_registered.connect(_on_decision_registered)
 
-	_bind_apps()
+	_build_app_shell()
 	_bind_launchers()
 	_refresh_top_bar()
 	_append_feed("Station chief online. Reviewing Falcon channel traffic.")
 
-func _bind_apps() -> void:
-	if inbox_app.has_method("bind_systems"):
-		inbox_app.call("bind_systems", _clock, _game_state, _event_bus, _case_runner)
-	if nominals_app.has_method("bind_systems"):
-		nominals_app.call("bind_systems", _clock, _game_state, _event_bus, _case_runner)
-	if intercepts_app.has_method("bind_systems"):
-		intercepts_app.call("bind_systems", _clock, _game_state, _event_bus, _case_runner)
-	if map_app.has_method("bind_systems"):
-		map_app.call("bind_systems", _clock, _game_state, _event_bus, _case_runner)
-	if staff_app.has_method("bind_systems"):
-		staff_app.call("bind_systems", _clock, _game_state, _event_bus, _case_runner)
+func _build_app_shell() -> void:
+	_register_app(&"inbox", "Inbox", InboxScene, Vector2(16, 14), Vector2(640, 420))
+	_register_app(&"database", "Database", NominalsScene, Vector2(170, 58), Vector2(620, 380))
+	_register_app(&"intercepts", "Intercepts", InterceptsScene, Vector2(120, 120), Vector2(620, 360))
+	_register_app(&"map", "Map", MapScene, Vector2(240, 46), Vector2(560, 320))
+	_register_app(&"staff", "Staff", StaffScene, Vector2(270, 140), Vector2(560, 330))
+	_register_app(&"terminal", "Terminal", TerminalScene, Vector2(210, 90), Vector2(520, 280))
+
+	for app_id in _app_instances.keys():
+		var app_control: Control = _app_instances[app_id]
+		if app_control.has_method("bind_systems"):
+			app_control.call("bind_systems", _clock, _game_state, _event_bus, _case_runner)
+
+func _register_app(app_id: StringName, title: String, scene: PackedScene, position: Vector2, size: Vector2) -> void:
+	var app_control: Control = scene.instantiate()
+	_app_instances[app_id] = app_control
+
+	var app_window: AppWindow = app_window_prototype.duplicate()
+	app_window.visible = false
+	app_window.position = position
+	app_window.custom_minimum_size = size
+	app_window.size = size
+	desktop_area.add_child(app_window)
+	app_window.configure(app_id, title, app_control)
+	app_window.focus_requested.connect(_on_window_focus_requested)
+	app_window.close_requested.connect(_on_window_close_requested)
+	app_window.minimize_requested.connect(_on_window_minimize_requested)
+	_app_windows[app_id] = app_window
 
 func _bind_launchers() -> void:
-	launcher_inbox.pressed.connect(func() -> void: workspace_tabs.current_tab = 0)
-	launcher_nominals.pressed.connect(func() -> void: workspace_tabs.current_tab = 1)
-	launcher_intercepts.pressed.connect(func() -> void: workspace_tabs.current_tab = 2)
-	launcher_map.pressed.connect(func() -> void: workspace_tabs.current_tab = 3)
-	launcher_staff.pressed.connect(func() -> void: workspace_tabs.current_tab = 4)
+	launcher_inbox.pressed.connect(func() -> void: _open_app(&"inbox"))
+	launcher_database.pressed.connect(func() -> void: _open_app(&"database"))
+	launcher_intercepts.pressed.connect(func() -> void: _open_app(&"intercepts"))
+	launcher_map.pressed.connect(func() -> void: _open_app(&"map"))
+	launcher_staff.pressed.connect(func() -> void: _open_app(&"staff"))
+	launcher_terminal.pressed.connect(func() -> void: _open_app(&"terminal"))
+
+func _open_app(app_id: StringName) -> void:
+	var app_window: AppWindow = _app_windows.get(app_id)
+	if app_window == null:
+		return
+	app_window.show_window()
+	_focus_window(app_window)
+	if _minimized_buttons.has(app_id):
+		_minimized_buttons[app_id].queue_free()
+		_minimized_buttons.erase(app_id)
+
+func _focus_window(app_window: AppWindow) -> void:
+	desktop_area.move_child(app_window, desktop_area.get_child_count() - 1)
+
+func _on_window_focus_requested(app_window: AppWindow) -> void:
+	_focus_window(app_window)
+
+func _on_window_close_requested(app_window: AppWindow) -> void:
+	app_window.visible = false
+	app_window.is_minimized = false
+	if _minimized_buttons.has(app_window.app_id):
+		_minimized_buttons[app_window.app_id].queue_free()
+		_minimized_buttons.erase(app_window.app_id)
+
+func _on_window_minimize_requested(app_window: AppWindow) -> void:
+	if app_window.is_minimized:
+		return
+	app_window.minimize_window()
+	if _minimized_buttons.has(app_window.app_id):
+		return
+	var reopen_button := Button.new()
+	reopen_button.text = String(app_window.app_id).capitalize()
+	reopen_button.pressed.connect(func() -> void:
+		_open_app(app_window.app_id)
+	)
+	taskbar.add_child(reopen_button)
+	_minimized_buttons[app_window.app_id] = reopen_button
 
 func _on_clock_ticked(_mission_time: float) -> void:
 	_refresh_top_bar()
@@ -66,11 +131,13 @@ func _on_game_event(topic: StringName, payload: Dictionary) -> void:
 	elif topic == &"clock_pressure":
 		_append_feed("%s" % payload.get("message", "Station timeline update."))
 	elif topic == &"case_loaded":
-		_append_feed("Case loaded: Falcon Meeting. Evidence channels are live.")
+		_append_feed("Case loaded: Falcon family seed active. Evidence channels are live.")
 	elif topic == &"case_station_report":
 		_append_feed("Station report filed for HQ review.")
 	elif topic == &"staff_status":
 		_append_feed("STAFF: %s" % String(payload.get("message", "Status update.")))
+	elif topic == &"staff_analysis_ready":
+		_append_feed("STAFF REPORT: %s" % String(payload.get("summary", "Analysis ready.")))
 
 func _on_political_capital_changed(_new_value: int) -> void:
 	_refresh_top_bar()
