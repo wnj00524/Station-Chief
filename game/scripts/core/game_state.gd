@@ -9,6 +9,8 @@ signal staff_status_changed(message: String)
 signal case_resolved(outcome_id: StringName, summary: String)
 signal evidence_viewed(category: StringName)
 signal station_report_ready(report: Dictionary)
+signal tags_updated(item_key: StringName)
+signal analysts_changed()
 
 var political_capital: int = 0
 var active_case_id: StringName = &""
@@ -22,6 +24,8 @@ var case_phase: StringName = &"briefing"
 var staff_status: String = ""
 var resolved_outcome_id: StringName = &""
 var station_report: Dictionary = {}
+var player_tags: Dictionary = {}
+var analysts: Array[Dictionary] = []
 
 func apply_political_capital(delta_value: int) -> void:
 	political_capital += delta_value
@@ -71,3 +75,25 @@ func has_viewed_evidence(category: StringName) -> bool:
 func set_station_report(report: Dictionary) -> void:
 	station_report = report
 	station_report_ready.emit(station_report)
+
+func add_tag(item_type: StringName, item_id: String, tag_text: String) -> void:
+	if item_id.strip_edges() == "":
+		return
+	var cleaned_tag: String = tag_text.strip_edges()
+	if cleaned_tag == "":
+		return
+	var key: StringName = StringName("%s:%s" % [String(item_type), item_id])
+	var tags: Array = player_tags.get(String(key), [])
+	if tags.has(cleaned_tag):
+		return
+	tags.append(cleaned_tag)
+	player_tags[String(key)] = tags
+	tags_updated.emit(key)
+
+func get_tags(item_type: StringName, item_id: String) -> Array:
+	var key: String = "%s:%s" % [String(item_type), item_id]
+	return player_tags.get(key, [])
+
+func set_analysts(new_analysts: Array[Dictionary]) -> void:
+	analysts = new_analysts
+	analysts_changed.emit()

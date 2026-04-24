@@ -2,19 +2,23 @@ class_name CaseRunner
 extends Node
 
 signal decision_registered(action_id: StringName, resolution_time_minutes: float)
+signal analysis_assigned(analyst_id: StringName, target_label: String, ready_at_minutes: float)
 
 var _event_bus
 var _clock
 var _game_state
+var _rng := RandomNumberGenerator.new()
 var _loaded_case: Dictionary = {}
 var _scheduled_events: Array[Dictionary] = []
 var _decision_payload: Dictionary = {}
 var _hidden_content_by_channel: Dictionary = {}
+var _pending_analyses: Array[Dictionary] = []
 
 func _init(event_bus, clock, game_state) -> void:
 	_event_bus = event_bus
 	_clock = clock
 	_game_state = game_state
+	_rng.randomize()
 
 func _ready() -> void:
 	_clock.ticked.connect(_on_clock_ticked)
@@ -34,6 +38,7 @@ func load_case(case_path: String) -> void:
 	_game_state.hidden_truth = _loaded_case.get("hidden_truth", {})
 	_game_state.political_capital = int(_loaded_case.get("starting_political_capital", 0))
 	_game_state.timeline_flags = {}
+	_game_state.player_tags = {}
 	_game_state.decision_locked = false
 	_game_state.selected_action_id = &""
 	_game_state.decision_committed_at_minutes = -1.0
@@ -41,11 +46,15 @@ func load_case(case_path: String) -> void:
 	_game_state.station_report = {}
 	_game_state.set_case_phase(&"briefing")
 	_game_state.set_staff_status("Falcon channel active. Watch desk awaiting tasking.")
+	_game_state.set_analysts(_build_analysts())
 	_scheduled_events.clear()
+	_pending_analyses.clear()
 	_decision_payload = {}
 	_hidden_content_by_channel = {}
 
 	var content: Dictionary = _load_case_content(_loaded_case.get("content_files", {}), case_path.get_base_dir())
+	content = _generate_case_variant(content)
+	content = _inject_noise_content(content)
 	var visible_content: Dictionary = _partition_content_by_availability(content)
 	_game_state.set_case_content(visible_content)
 	_game_state.set_case_phase(&"live_window")
@@ -57,6 +66,40 @@ func load_case(case_path: String) -> void:
 
 	_event_bus.publish(&"case_loaded", {"case_id": _game_state.active_case_id})
 	_event_bus.publish(&"staff_status", {"message": _game_state.staff_status})
+
+func assign_analysis(analyst_id: StringName, target: Dictionary) -> bool:
+	if _game_state.case_phase == &"resolved":
+		return false
+	var analyst: Dictionary = _get_analyst(analyst_id)
+	if analyst.is_empty():
+		return false
+	var speed: float = float(analyst.get("speed", 1.0))
+	var ready_at: float = _clock.mission_time_minutes + max(1.5, 4.0 / speed)
+	var assignment := {
+		"analyst_id": analyst_id,
+		"target": target,
+		"ready_at": ready_at,
+		"accuracy": float(analyst.get("accuracy", 0.5)),
+		"name": String(analyst.get("name", "Analyst"))
+	}
+	_pending_analyses.append(assignment)
+	var message: String = "%s reviewing %s." % [assignment["name"], String(target.get("label", "case material"))]
+	_game_state.set_staff_status(message)
+	_event_bus.publish(&"staff_status", {"message": message})
+	analysis_assigned.emit(analyst_id, String(target.get("label", "case material")), ready_at)
+	return true
+
+func list_analysis_targets() -> Array[Dictionary]:
+	var targets: Array[Dictionary] = [{"id": "case_overview", "type": "case", "label": "Falcon case overview"}]
+	for message: Dictionary in _game_state.case_content.get("inbox", []):
+		targets.append({"id": String(message.get("id", "")), "type": "inbox", "label": "MSG: %s" % String(message.get("subject", "Untitled"))})
+	for entry: Dictionary in _game_state.case_content.get("intercepts", []):
+		targets.append({"id": String(entry.get("id", "")), "type": "intercept", "label": "INT: %s" % String(entry.get("channel", "UNKNOWN"))})
+	for marker: Dictionary in _game_state.case_content.get("map_markers", []):
+		targets.append({"id": String(marker.get("id", "")), "type": "map", "label": "MAP: %s" % String(marker.get("label", "Unknown"))})
+	for nominal: Dictionary in _game_state.case_content.get("nominals", []):
+		targets.append({"id": String(nominal.get("id", "")), "type": "nominal", "label": "NOM: %s" % String(nominal.get("name", "Unknown"))})
+	return targets
 
 func commit_player_action(action_id: StringName) -> bool:
 	if _game_state.decision_locked:
@@ -92,8 +135,99 @@ func commit_player_action(action_id: StringName) -> bool:
 func _on_clock_ticked(_mission_time: float) -> void:
 	_process_scheduled_events()
 	_reveal_due_content()
+	_process_pending_analysis()
 	_process_no_decision_pressure()
 	_process_outcome_resolution()
+
+func _process_pending_analysis() -> void:
+	if _pending_analyses.is_empty():
+		return
+	var remaining: Array[Dictionary] = []
+	for assignment: Dictionary in _pending_analyses:
+		if _clock.mission_time_minutes < float(assignment.get("ready_at", INF)):
+			remaining.append(assignment)
+			continue
+		var report: Dictionary = _build_analysis_report(assignment)
+		_event_bus.publish(&"staff_analysis_ready", report)
+		_event_bus.publish(&"intel_ping", {
+			"source": "ANALYST",
+			"message": report.get("summary", "Analysis report posted.")
+		})
+		_game_state.set_staff_status("%s filed a report." % String(assignment.get("name", "Analyst")))
+	_pending_analyses = remaining
+
+func _build_analysis_report(assignment: Dictionary) -> Dictionary:
+	var accuracy: float = float(assignment.get("accuracy", 0.5))
+	var roll: float = _rng.randf()
+	var high_confidence: bool = accuracy >= 0.72
+	var close_to_truth: bool = roll <= accuracy
+	var summary: String = ""
+	if close_to_truth and high_confidence:
+		summary = "High confidence: source account conflicts with phone metadata near airport perimeter."
+	elif close_to_truth:
+		summary = "Medium confidence: timeline has unresolved location mismatch. Verify before committing."
+	elif high_confidence:
+		summary = "High confidence: meeting appears confirmed at reported contact point."
+	else:
+		summary = "Low confidence: meeting appears confirmed, but supporting data remains thin."
+	return {
+		"analyst_id": assignment.get("analyst_id", &""),
+		"name": assignment.get("name", "Analyst"),
+		"target": assignment.get("target", {}),
+		"summary": summary,
+		"confidence": "high" if high_confidence else "low"
+	}
+
+func _build_analysts() -> Array[Dictionary]:
+	return [
+		{"id": "nora", "name": "Nora Vance", "speed": 1.4, "accuracy": 0.82, "safety": 0.6},
+		{"id": "idris", "name": "Idris Kade", "speed": 1.0, "accuracy": 0.64, "safety": 0.8},
+		{"id": "mina", "name": "Mina Shah", "speed": 0.7, "accuracy": 0.9, "safety": 0.7}
+	]
+
+func _get_analyst(analyst_id: StringName) -> Dictionary:
+	for analyst: Dictionary in _game_state.analysts:
+		if StringName(analyst.get("id", "")) == analyst_id:
+			return analyst
+	return {}
+
+func _generate_case_variant(content: Dictionary) -> Dictionary:
+	var result: Dictionary = content.duplicate(true)
+	var conflict: bool = _rng.randf() < 0.75
+	var locations: Array = ["Cedar Square cafe", "Old Harbor tea room", "Meridian cafe"]
+	var humint_location: String = locations[_rng.randi_range(0, locations.size() - 1)]
+	var true_location: String = "Airport perimeter"
+	if not conflict:
+		humint_location = true_location
+	_game_state.hidden_truth["humint_sigint_conflict"] = conflict
+	_game_state.hidden_truth["humint_claim_location"] = humint_location
+	_game_state.hidden_truth["sigint_location"] = true_location
+
+	for i in range(result.get("inbox", []).size()):
+		var msg: Dictionary = result["inbox"][i]
+		if String(msg.get("id", "")) == "falcon_initial":
+			msg["body"] = "I'm at %s awaiting the official. Need guidance before the window closes." % humint_location
+			result["inbox"][i] = msg
+	for i in range(result.get("intercepts", []).size()):
+		var entry: Dictionary = result["intercepts"][i]
+		if String(entry.get("id", "")) == "intercept_route_shift":
+			entry["summary"] = "Device associated with Falcon registered near %s at %s." % [true_location.to_lower(), String(entry.get("timestamp", "08:05"))]
+			result["intercepts"][i] = entry
+	return result
+
+func _inject_noise_content(content: Dictionary) -> Dictionary:
+	var result: Dictionary = content.duplicate(true)
+	var noise_inbox: Array = [
+		{"id":"noise_cable_1","timestamp":"08:04","available_at_minutes":484,"from":"Admin","subject":"Vehicle pool maintenance","body":"Garage requests quarter-hour delay for non-operational pool cars."},
+		{"id":"noise_cable_2","timestamp":"08:10","available_at_minutes":490,"from":"Consular Desk","subject":"Passport printer outage","body":"Local office asks for toner transfer by noon."}
+	]
+	var noise_intercepts: Array = [
+		{"id":"noise_rf_market","timestamp":"08:06","available_at_minutes":486,"channel":"RF-CIV","summary":"Taxi dispatch chatter reports sporting-event congestion by riverfront."},
+		{"id":"noise_sigint_customs","timestamp":"08:12","available_at_minutes":492,"channel":"SIGINT-COM","summary":"Customs system sync delay affects container logging for terminal C."}
+	]
+	result["inbox"].append_array(noise_inbox)
+	result["intercepts"].append_array(noise_intercepts)
+	return result
 
 func _process_scheduled_events() -> void:
 	for scheduled_event in _scheduled_events:
@@ -101,7 +235,6 @@ func _process_scheduled_events() -> void:
 			continue
 		if _clock.mission_time_minutes < float(scheduled_event.get("time_minutes", 0.0)):
 			continue
-
 		scheduled_event["fired"] = true
 		var topic: StringName = StringName(scheduled_event.get("topic", ""))
 		if topic != &"":
@@ -196,7 +329,6 @@ func _resolve_outcome(action_id: StringName, commit_time_minutes: float) -> Stri
 	var transfer_close: float = float(decision.get("transfer_window_close_minutes", 498.0))
 	var has_airport_context: bool = bool(_game_state.has_viewed_evidence(&"intercept_clue") or _game_state.has_viewed_evidence(&"map_airport_cafe"))
 	var has_schedule_context: bool = bool(_game_state.has_viewed_evidence(&"nominal_logistics"))
-
 	match String(action_id):
 		"task_surveillance_airport":
 			if commit_time_minutes <= transfer_close:
@@ -278,7 +410,6 @@ func _reveal_content_item(channel: String, item_id: String) -> void:
 	for entry: Dictionary in channel_entries:
 		if String(entry.get("id", "")) == item_id:
 			return
-
 	var waiting_entries: Array = _hidden_content_by_channel.get(channel, [])
 	for index in range(waiting_entries.size()):
 		var entry: Dictionary = waiting_entries[index]

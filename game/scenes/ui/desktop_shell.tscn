@@ -1,11 +1,7 @@
-[gd_scene load_steps=8 format=3 uid="uid://bkva3ur3wdu0w"]
+[gd_scene load_steps=3 format=3 uid="uid://bkva3ur3wdu0w"]
 
 [ext_resource type="Script" path="res://scripts/ui/desktop_shell.gd" id="1_km3ee"]
-[ext_resource type="PackedScene" path="res://scenes/apps/inbox.tscn" id="2_4blx5"]
-[ext_resource type="PackedScene" path="res://scenes/apps/nominals.tscn" id="3_ub6jo"]
-[ext_resource type="PackedScene" path="res://scenes/apps/intercepts.tscn" id="4_5sggl"]
-[ext_resource type="PackedScene" path="res://scenes/apps/map.tscn" id="5_y0m3o"]
-[ext_resource type="PackedScene" path="res://scenes/apps/staff_panel.tscn" id="6_p8pi1"]
+[ext_resource type="PackedScene" path="res://scenes/ui/app_window.tscn" id="2_wndw"]
 
 [node name="DesktopShell" type="Control"]
 layout_mode = 3
@@ -52,7 +48,6 @@ text = "POLITICAL CAPITAL: 0"
 [node name="Body" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
-anchor_top = 0.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_top = 56.0
@@ -61,7 +56,7 @@ grow_vertical = 2
 
 [node name="Dock" type="PanelContainer" parent="Body"]
 layout_mode = 2
-custom_minimum_size = Vector2(240, 0)
+custom_minimum_size = Vector2(260, 0)
 
 [node name="DockMargin" type="MarginContainer" parent="Body/Dock"]
 layout_mode = 2
@@ -82,25 +77,30 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Inbox"
 
-[node name="LauncherNominals" type="Button" parent="Body/Dock/DockMargin/DockVBox"]
+[node name="LauncherDatabase" type="Button" parent="Body/Dock/DockMargin/DockVBox"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Nominals"
-
-[node name="LauncherIntercepts" type="Button" parent="Body/Dock/DockMargin/DockVBox"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Intercepts"
+text = "Database"
 
 [node name="LauncherMap" type="Button" parent="Body/Dock/DockMargin/DockVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Map"
 
+[node name="LauncherIntercepts" type="Button" parent="Body/Dock/DockMargin/DockVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Intercepts"
+
 [node name="LauncherStaff" type="Button" parent="Body/Dock/DockMargin/DockVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Staff"
+
+[node name="LauncherTerminal" type="Button" parent="Body/Dock/DockMargin/DockVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Terminal"
 
 [node name="FeedLabel" type="Label" parent="Body/Dock/DockMargin/DockVBox"]
 layout_mode = 2
@@ -113,25 +113,21 @@ layout_mode = 2
 size_flags_vertical = 3
 scroll_following = true
 
-[node name="DesktopWorkspace" type="PanelContainer" parent="Body"]
+[node name="DesktopWorkspace" type="VBoxContainer" parent="Body"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="WorkspaceTabs" type="TabContainer" parent="Body/DesktopWorkspace"]
+[node name="DesktopArea" type="Control" parent="Body/DesktopWorkspace"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
-[node name="Inbox" parent="Body/DesktopWorkspace/WorkspaceTabs" instance=ExtResource("2_4blx5")]
+[node name="Taskbar" type="HBoxContainer" parent="Body/DesktopWorkspace"]
 unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
 
-[node name="Nominals" parent="Body/DesktopWorkspace/WorkspaceTabs" instance=ExtResource("3_ub6jo")]
+[node name="AppWindowPrototype" parent="Body/DesktopWorkspace/DesktopArea" instance=ExtResource("2_wndw")]
 unique_name_in_owner = true
-
-[node name="Intercepts" parent="Body/DesktopWorkspace/WorkspaceTabs" instance=ExtResource("4_5sggl")]
-unique_name_in_owner = true
-
-[node name="Map" parent="Body/DesktopWorkspace/WorkspaceTabs" instance=ExtResource("5_y0m3o")]
-unique_name_in_owner = true
-
-[node name="StaffPanel" parent="Body/DesktopWorkspace/WorkspaceTabs" instance=ExtResource("6_p8pi1")]
-unique_name_in_owner = true
+visible = false

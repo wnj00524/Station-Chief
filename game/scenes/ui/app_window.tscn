@@ -1,0 +1,50 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/app_window.gd" id="1_1"]
+
+[node name="AppWindow" type="PanelContainer"]
+custom_minimum_size = Vector2(420, 280)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_1")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Header" type="PanelContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="HeaderBar" type="HBoxContainer" parent="VBox/Header"]
+layout_mode = 2
+
+[node name="WindowTitle" type="Label" parent="VBox/Header/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "APP"
+
+[node name="FocusButton" type="Button" parent="VBox/Header/HeaderBar"]
+layout_mode = 2
+text = "Focus"
+
+[node name="MinimizeButton" type="Button" parent="VBox/Header/HeaderBar"]
+layout_mode = 2
+text = "_"
+
+[node name="CloseButton" type="Button" parent="VBox/Header/HeaderBar"]
+layout_mode = 2
+text = "X"
+
+[node name="WindowContent" type="MarginContainer" parent="VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[connection signal="pressed" from="VBox/Header/HeaderBar/FocusButton" to="." method="_on_focus_button_pressed"]
+[connection signal="pressed" from="VBox/Header/HeaderBar/MinimizeButton" to="." method="_on_minimize_button_pressed"]
+[connection signal="pressed" from="VBox/Header/HeaderBar/CloseButton" to="." method="_on_close_button_pressed"]
