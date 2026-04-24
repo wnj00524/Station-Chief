@@ -13,7 +13,7 @@ const TerminalScene: PackedScene = preload("res://scenes/apps/terminal_stub.tscn
 @onready var feed_log: RichTextLabel = %FeedLog
 @onready var desktop_area: Control = %DesktopArea
 @onready var taskbar: HBoxContainer = %Taskbar
-@onready var app_window_prototype: AppWindow = %AppWindowPrototype
+@onready var app_window_prototype = %AppWindowPrototype
 
 @onready var launcher_inbox: Button = %LauncherInbox
 @onready var launcher_database: Button = %LauncherDatabase
@@ -65,7 +65,7 @@ func _register_app(app_id: StringName, title: String, scene: PackedScene, positi
 	var app_control: Control = scene.instantiate()
 	_app_instances[app_id] = app_control
 
-	var app_window: AppWindow = app_window_prototype.duplicate()
+	var app_window = app_window_prototype.duplicate()
 	app_window.visible = false
 	app_window.position = position
 	app_window.custom_minimum_size = size
@@ -86,7 +86,7 @@ func _bind_launchers() -> void:
 	launcher_terminal.pressed.connect(func() -> void: _open_app(&"terminal"))
 
 func _open_app(app_id: StringName) -> void:
-	var app_window: AppWindow = _app_windows.get(app_id)
+	var app_window = _app_windows.get(app_id)
 	if app_window == null:
 		return
 	app_window.show_window()
@@ -95,20 +95,20 @@ func _open_app(app_id: StringName) -> void:
 		_minimized_buttons[app_id].queue_free()
 		_minimized_buttons.erase(app_id)
 
-func _focus_window(app_window: AppWindow) -> void:
+func _focus_window(app_window) -> void:
 	desktop_area.move_child(app_window, desktop_area.get_child_count() - 1)
 
-func _on_window_focus_requested(app_window: AppWindow) -> void:
+func _on_window_focus_requested(app_window) -> void:
 	_focus_window(app_window)
 
-func _on_window_close_requested(app_window: AppWindow) -> void:
+func _on_window_close_requested(app_window) -> void:
 	app_window.visible = false
 	app_window.is_minimized = false
 	if _minimized_buttons.has(app_window.app_id):
 		_minimized_buttons[app_window.app_id].queue_free()
 		_minimized_buttons.erase(app_window.app_id)
 
-func _on_window_minimize_requested(app_window: AppWindow) -> void:
+func _on_window_minimize_requested(app_window) -> void:
 	if app_window.is_minimized:
 		return
 	app_window.minimize_window()
