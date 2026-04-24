@@ -19,37 +19,95 @@
   },
   "scheduled_events": [
     {
-      "time_minutes": 486,
+      "time_minutes": 482,
       "topic": "intel_ping",
       "payload": {
-        "source": "WATCH DESK",
-        "message": "Falcon channel went quiet after initial cafe claim."
-      }
+        "source": "INBOX",
+        "message": "Falcon channel message queued from Cedar Square cafe account."
+      },
+      "effects": [
+        {
+          "type": "staff_status",
+          "message": "Falcon channel active. Watch desk awaiting tasking."
+        }
+      ]
     },
     {
-      "time_minutes": 492,
+      "time_minutes": 485,
       "topic": "intel_ping",
       "payload": {
         "source": "SIGINT",
-        "message": "Secondary metadata sweep holds device near airport service road."
+        "message": "First metadata pull indicates Falcon handset near airport service road."
+      },
+      "effects": [
+        {
+          "type": "staff_status",
+          "message": "Analyst cell can verify metadata but will take time."
+        }
+      ]
+    },
+    {
+      "time_minutes": 487,
+      "topic": "intel_ping",
+      "payload": {
+        "source": "VOICE-SCRAPE",
+        "message": "Ambiguous scrape posted to Intercepts queue from unknown speaker."
       }
+    },
+    {
+      "time_minutes": 489,
+      "topic": "intel_ping",
+      "payload": {
+        "source": "LIAISON",
+        "message": "Official schedule mismatch noted; residence prep still active."
+      },
+      "effects": [
+        {
+          "type": "append_nominal_note",
+          "id": "local_official",
+          "note": "08:09 watch desk note: residence motorcade prep still logged despite Falcon's cafe claim."
+        },
+        {
+          "type": "staff_status",
+          "message": "Watch desk flags schedule mismatch. Need decision before transfer window."
+        }
+      ]
+    },
+    {
+      "time_minutes": 491,
+      "topic": "intel_ping",
+      "payload": {
+        "source": "RF-BURST",
+        "message": "Logistics burst references gate A-17 and warns transfer window is tightening."
+      },
+      "effects": [
+        {
+          "type": "staff_status",
+          "message": "Mobile team reports airport route closing soon."
+        }
+      ]
     },
     {
       "time_minutes": 497,
       "topic": "clock_pressure",
       "payload": {
-        "message": "Operations notes convoy movement expected within the next 10 minutes."
-      }
+        "message": "Transfer window closing warning from mobile team; dispatch authority required now."
+      },
+      "effects": [
+        {
+          "type": "staff_status",
+          "message": "No order logged. Window narrowing."
+        }
+      ]
     }
   ],
   "decision": {
-    "consequence_delay_minutes": 20,
-    "action_outcome": {
-      "trust_and_proceed": "failure",
-      "assign_analyst_verify": "partial",
-      "task_surveillance_airport": "best",
-      "abort_or_delay": "defensive"
-    }
+    "consequence_delay_minutes": 6,
+    "transfer_window_close_minutes": 498,
+    "no_decision_warning_minutes": 497,
+    "no_decision_resolve_minutes": 500,
+    "no_decision_consequence_delay_minutes": 2,
+    "no_decision_outcome": "failure"
   },
   "outcomes": {
     "best": {

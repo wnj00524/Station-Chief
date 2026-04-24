@@ -9,6 +9,7 @@ var _game_state: GameState
 var _loaded_case: Dictionary = {}
 var _scheduled_events: Array[Dictionary] = []
 var _decision_payload: Dictionary = {}
+var _hidden_content_by_channel: Dictionary = {}
 
 func _init(event_bus: EventBus, clock: Clock, game_state: GameState) -> void:
 	_event_bus = event_bus
@@ -34,13 +35,20 @@ func load_case(case_path: String) -> void:
 	_game_state.political_capital = int(_loaded_case.get("starting_political_capital", 0))
 	_game_state.timeline_flags = {}
 	_game_state.decision_locked = false
+	_game_state.selected_action_id = &""
+	_game_state.decision_committed_at_minutes = -1.0
 	_game_state.resolved_outcome_id = &""
 	_game_state.station_report = {}
+	_game_state.set_case_phase(&"briefing")
+	_game_state.set_staff_status("Falcon channel active. Watch desk awaiting tasking.")
 	_scheduled_events.clear()
 	_decision_payload = {}
+	_hidden_content_by_channel = {}
 
 	var content := _load_case_content(_loaded_case.get("content_files", {}), case_path.get_base_dir())
-	_game_state.set_case_content(content)
+	var visible_content := _partition_content_by_availability(content)
+	_game_state.set_case_content(visible_content)
+	_game_state.set_case_phase(&"live_window")
 
 	for scheduled_event: Dictionary in _loaded_case.get("scheduled_events", []):
 		var event_copy := scheduled_event.duplicate(true)
@@ -48,39 +56,43 @@ func load_case(case_path: String) -> void:
 		_scheduled_events.append(event_copy)
 
 	_event_bus.publish(&"case_loaded", {"case_id": _game_state.active_case_id})
+	_event_bus.publish(&"staff_status", {"message": _game_state.staff_status})
 
 func commit_player_action(action_id: StringName) -> bool:
 	if _game_state.decision_locked:
 		return false
-
-	if not _loaded_case.has("decision"):
+	if _loaded_case.is_empty() or not _loaded_case.has("decision"):
 		return false
 
 	var decision: Dictionary = _loaded_case.get("decision", {})
-	var outcomes_by_action: Dictionary = decision.get("action_outcome", {})
-	var outcome_id: StringName = StringName(outcomes_by_action.get(String(action_id), ""))
+	var now := _clock.mission_time_minutes
+	var outcome_id := _resolve_outcome(action_id, now)
 	if outcome_id == &"":
 		return false
 
-	_game_state.decision_locked = true
-	var consequence_delay := float(decision.get("consequence_delay_minutes", 25.0))
-	var resolve_at := _clock.mission_time_minutes + consequence_delay
+	var consequence_delay := float(decision.get("consequence_delay_minutes", 6.0))
+	var resolve_at := now + consequence_delay
+	_game_state.mark_decision_committed(action_id, now)
+	_game_state.set_staff_status("Order pending: %s." % String(action_id).replace("_", " "))
 	_decision_payload = {
 		"action_id": action_id,
 		"outcome_id": outcome_id,
-		"resolve_at": resolve_at
+		"resolve_at": resolve_at,
+		"committed_at": now
 	}
 	decision_registered.emit(action_id, resolve_at)
 	_event_bus.publish(&"player_action_committed", {
 		"case_id": _game_state.active_case_id,
 		"action_id": action_id,
-		"mission_time": _clock.mission_time_minutes,
+		"mission_time": now,
 		"resolve_at": resolve_at
 	})
 	return true
 
 func _on_clock_ticked(_mission_time: float) -> void:
 	_process_scheduled_events()
+	_reveal_due_content()
+	_process_no_decision_pressure()
 	_process_outcome_resolution()
 
 func _process_scheduled_events() -> void:
@@ -94,6 +106,64 @@ func _process_scheduled_events() -> void:
 		var topic := StringName(scheduled_event.get("topic", ""))
 		if topic != &"":
 			_event_bus.publish(topic, scheduled_event.get("payload", {}))
+		for effect: Dictionary in scheduled_event.get("effects", []):
+			_apply_scheduled_effect(effect)
+
+func _apply_scheduled_effect(effect: Dictionary) -> void:
+	var effect_type := String(effect.get("type", ""))
+	match effect_type:
+		"reveal_content":
+			_reveal_content_item(String(effect.get("channel", "")), String(effect.get("id", "")))
+		"append_nominal_note":
+			_append_nominal_note(String(effect.get("id", "")), String(effect.get("note", "")))
+		"staff_status":
+			var status := String(effect.get("message", ""))
+			if status != "":
+				_game_state.set_staff_status(status)
+				_event_bus.publish(&"staff_status", {"message": status})
+		"set_phase":
+			var phase := StringName(effect.get("phase", ""))
+			if phase != &"":
+				_game_state.set_case_phase(phase)
+
+func _reveal_due_content() -> void:
+	for channel_key in _hidden_content_by_channel.keys():
+		var waiting: Array = _hidden_content_by_channel[channel_key]
+		if waiting.is_empty():
+			continue
+		var still_hidden: Array = []
+		for item: Dictionary in waiting:
+			var available_at := float(item.get("available_at_minutes", -1.0))
+			if available_at >= 0.0 and _clock.mission_time_minutes >= available_at:
+				_reveal_content_item(channel_key, String(item.get("id", "")))
+			else:
+				still_hidden.append(item)
+		_hidden_content_by_channel[channel_key] = still_hidden
+
+func _process_no_decision_pressure() -> void:
+	if _game_state.decision_locked:
+		return
+	var decision: Dictionary = _loaded_case.get("decision", {})
+	var warn_at := float(decision.get("no_decision_warning_minutes", -1.0))
+	var resolve_at := float(decision.get("no_decision_resolve_minutes", -1.0))
+
+	if warn_at >= 0.0 and _clock.mission_time_minutes >= warn_at and not bool(_game_state.timeline_flags.get("no_decision_warned", false)):
+		_game_state.timeline_flags["no_decision_warned"] = true
+		_event_bus.publish(&"clock_pressure", {"message": "No order logged. Transfer window narrowing rapidly."})
+		_game_state.set_staff_status("No order logged. Window narrowing.")
+		_event_bus.publish(&"staff_status", {"message": _game_state.staff_status})
+
+	if resolve_at >= 0.0 and _clock.mission_time_minutes >= resolve_at:
+		_game_state.mark_decision_committed(&"no_decision", _clock.mission_time_minutes)
+		_game_state.set_case_phase(&"resolving")
+		_game_state.set_staff_status("Window closed before tasking. Logging missed opportunity report.")
+		_event_bus.publish(&"staff_status", {"message": _game_state.staff_status})
+		_decision_payload = {
+			"action_id": StringName("no_decision"),
+			"outcome_id": StringName(decision.get("no_decision_outcome", "failure")),
+			"resolve_at": _clock.mission_time_minutes + float(decision.get("no_decision_consequence_delay_minutes", 2.0)),
+			"committed_at": _clock.mission_time_minutes
+		}
 
 func _process_outcome_resolution() -> void:
 	if _decision_payload.is_empty():
@@ -108,6 +178,7 @@ func _process_outcome_resolution() -> void:
 	var political_capital_delta := int(outcome_data.get("political_capital_delta", 0))
 	_game_state.apply_political_capital(political_capital_delta)
 	var summary := String(outcome_data.get("summary", "Outcome unavailable."))
+	_game_state.set_case_phase(&"resolved")
 	_game_state.mark_case_resolved(outcome_id, summary)
 
 	var report := _build_station_report(action_id, outcome_id, political_capital_delta, outcome_data)
@@ -119,6 +190,30 @@ func _process_outcome_resolution() -> void:
 		"summary": summary
 	})
 	_decision_payload = {}
+
+func _resolve_outcome(action_id: StringName, commit_time_minutes: float) -> StringName:
+	var decision: Dictionary = _loaded_case.get("decision", {})
+	var transfer_close := float(decision.get("transfer_window_close_minutes", 498.0))
+	var has_airport_context := _game_state.has_viewed_evidence(&"intercept_clue") or _game_state.has_viewed_evidence(&"map_airport_cafe")
+	var has_schedule_context := _game_state.has_viewed_evidence(&"nominal_logistics")
+
+	match String(action_id):
+		"task_surveillance_airport":
+			if commit_time_minutes <= transfer_close:
+				return &"best"
+			return &"partial"
+		"assign_analyst_verify":
+			if commit_time_minutes <= transfer_close - 3.0 and not has_airport_context:
+				return &"partial"
+			if has_airport_context and has_schedule_context:
+				return &"defensive"
+			return &"partial"
+		"trust_and_proceed":
+			return &"failure"
+		"abort_or_delay":
+			return &"defensive"
+		_:
+			return &""
 
 func _build_station_report(action_id: StringName, outcome_id: StringName, political_capital_delta: int, outcome_data: Dictionary) -> Dictionary:
 	var reviewed_evidence: Array[String] = []
@@ -158,6 +253,58 @@ func _load_case_content(content_files: Dictionary, case_root_path: String) -> Di
 		var absolute_path := "%s/%s" % [case_root_path, relative_path]
 		content[key] = _read_json(absolute_path)
 	return content
+
+func _partition_content_by_availability(content: Dictionary) -> Dictionary:
+	var visible := {}
+	for channel_key in content.keys():
+		var entries: Array = content[channel_key]
+		var visible_entries: Array = []
+		var hidden_entries: Array = []
+		for raw_entry in entries:
+			var entry: Dictionary = raw_entry.duplicate(true)
+			var available_at := float(entry.get("available_at_minutes", -1.0))
+			if available_at >= 0.0 and available_at > _clock.mission_time_minutes:
+				hidden_entries.append(entry)
+			else:
+				visible_entries.append(entry)
+		visible[channel_key] = visible_entries
+		_hidden_content_by_channel[channel_key] = hidden_entries
+	return visible
+
+func _reveal_content_item(channel: String, item_id: String) -> void:
+	if channel == "" or item_id == "":
+		return
+	var channel_entries: Array = _game_state.case_content.get(channel, [])
+	for entry: Dictionary in channel_entries:
+		if String(entry.get("id", "")) == item_id:
+			return
+
+	var waiting_entries: Array = _hidden_content_by_channel.get(channel, [])
+	for index in range(waiting_entries.size()):
+		var entry: Dictionary = waiting_entries[index]
+		if String(entry.get("id", "")) != item_id:
+			continue
+		channel_entries.append(entry)
+		waiting_entries.remove_at(index)
+		_hidden_content_by_channel[channel] = waiting_entries
+		_game_state.update_case_content_channel(StringName(channel), channel_entries)
+		break
+
+func _append_nominal_note(nominal_id: String, note: String) -> void:
+	if nominal_id == "" or note == "":
+		return
+	var entries: Array = _game_state.case_content.get("nominals", [])
+	var changed := false
+	for index in range(entries.size()):
+		var entry: Dictionary = entries[index]
+		if String(entry.get("id", "")) != nominal_id:
+			continue
+		entry["notes"] = "%s\n\n%s" % [String(entry.get("notes", "")), note]
+		entries[index] = entry
+		changed = true
+		break
+	if changed:
+		_game_state.update_case_content_channel(&"nominals", entries)
 
 func _read_json(path: String) -> Variant:
 	if not FileAccess.file_exists(path):
