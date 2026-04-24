@@ -39,3 +39,5 @@ func _render_message(index: int) -> void:
 	subject_value.text = String(message.get("subject", "Untitled"))
 	timestamp_value.text = String(message.get("timestamp", "--:--"))
 	body_value.text = String(message.get("body", ""))
+	if String(message.get("id", "")) == "falcon_initial":
+		_game_state.mark_evidence_viewed(&"inbox_claim")

@@ -6,6 +6,7 @@ extends Control
 
 var _game_state: GameState
 var _markers: Array = []
+var _seen_markers := {}
 
 func bind_systems(_clock: Clock, game_state: GameState) -> void:
 	_game_state = game_state
@@ -19,6 +20,7 @@ func _reload_markers() -> void:
 	if _game_state == null:
 		return
 	_markers = _game_state.case_content.get("map_markers", [])
+	_seen_markers.clear()
 	marker_list.clear()
 	for marker: Dictionary in _markers:
 		marker_list.add_item(String(marker.get("label", "Unknown")))
@@ -37,3 +39,9 @@ func _render_marker(index: int) -> void:
 	var x := float(marker.get("x", 0.0))
 	var y := float(marker.get("y", 0.0))
 	marker_coord_value.text = "Grid %.2f, %.2f" % [x, y]
+
+	var marker_id := String(marker.get("id", ""))
+	if marker_id != "":
+		_seen_markers[marker_id] = true
+		if bool(_seen_markers.get("cafe", false)) and bool(_seen_markers.get("airport_perimeter", false)):
+			_game_state.mark_evidence_viewed(&"map_airport_cafe")

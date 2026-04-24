@@ -2,11 +2,16 @@
   {
     "id": "local_official",
     "name": "Local Official",
-    "notes": "Prior links to logistics entities operating near airport transit corridors."
+    "notes": "Prior compliance inquiry tied the official's aide to shell logistics firms leasing hangar storage near airport perimeter roads."
   },
   {
     "id": "hia_handler",
     "name": "HIA Handler",
-    "notes": "Assessed intermediary for rival agency activity."
+    "notes": "Assessed intermediary for rival agency activity; repeated sightings near cargo customs brokers connected to late-night airport clearances."
+  },
+  {
+    "id": "falcon",
+    "name": "Falcon",
+    "notes": "Historically reliable source, but last three transmissions show abrupt pattern shifts consistent with coercion or communications spoofing."
   }
 ]

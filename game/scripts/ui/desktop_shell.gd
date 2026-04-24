@@ -30,6 +30,7 @@ func bind_systems(clock: Clock, event_bus: EventBus, game_state: GameState, case
 	_event_bus.game_event.connect(_on_game_event)
 	_game_state.political_capital_changed.connect(_on_political_capital_changed)
 	_game_state.case_resolved.connect(_on_case_resolved)
+	_game_state.station_report_ready.connect(_on_station_report_ready)
 	_case_runner.decision_registered.connect(_on_decision_registered)
 
 	_bind_apps()
@@ -62,6 +63,12 @@ func _on_clock_ticked(_mission_time: float) -> void:
 func _on_game_event(topic: StringName, payload: Dictionary) -> void:
 	if topic == &"intel_ping":
 		_append_feed("%s: %s" % [payload.get("source", "SYSTEM"), payload.get("message", "Intel update")])
+	elif topic == &"clock_pressure":
+		_append_feed("%s" % payload.get("message", "Station timeline update."))
+	elif topic == &"case_loaded":
+		_append_feed("Case loaded: Falcon Meeting. Evidence channels are live.")
+	elif topic == &"case_station_report":
+		_append_feed("Station report filed for HQ review.")
 
 func _on_political_capital_changed(_new_value: int) -> void:
 	_refresh_top_bar()
@@ -73,6 +80,16 @@ func _on_decision_registered(action_id: StringName, resolve_at_minutes: float) -
 
 func _on_case_resolved(outcome_id: StringName, summary: String) -> void:
 	_append_feed("Outcome [%s]: %s" % [String(outcome_id), summary])
+
+func _on_station_report_ready(report: Dictionary) -> void:
+	_append_feed("REPORT // ACTION: %s | ΔPC: %+d | TOTAL: %d" % [
+		String(report.get("action_id", "unknown")).replace("_", " "),
+		int(report.get("political_capital_delta", 0)),
+		int(report.get("political_capital_total", _game_state.political_capital))
+	])
+	_append_feed("REPORT // %s" % String(report.get("operational_summary", "No operational summary.")))
+	_append_feed("REPORT // %s" % String(report.get("evidence_note", "Evidence notes unavailable.")))
+	_append_feed("REPORT // FORWARD: %s" % String(report.get("forward_hook", "No forward hook available.")))
 
 func _refresh_top_bar() -> void:
 	if _clock != null:

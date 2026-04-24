@@ -35,6 +35,7 @@ func load_case(case_path: String) -> void:
 	_game_state.timeline_flags = {}
 	_game_state.decision_locked = false
 	_game_state.resolved_outcome_id = &""
+	_game_state.station_report = {}
 	_scheduled_events.clear()
 	_decision_payload = {}
 
@@ -101,17 +102,54 @@ func _process_outcome_resolution() -> void:
 		return
 
 	var outcome_id := StringName(_decision_payload.get("outcome_id", ""))
+	var action_id := StringName(_decision_payload.get("action_id", ""))
 	var outcomes: Dictionary = _loaded_case.get("outcomes", {})
 	var outcome_data: Dictionary = outcomes.get(String(outcome_id), {})
-	_game_state.apply_political_capital(int(outcome_data.get("political_capital_delta", 0)))
+	var political_capital_delta := int(outcome_data.get("political_capital_delta", 0))
+	_game_state.apply_political_capital(political_capital_delta)
 	var summary := String(outcome_data.get("summary", "Outcome unavailable."))
 	_game_state.mark_case_resolved(outcome_id, summary)
+
+	var report := _build_station_report(action_id, outcome_id, political_capital_delta, outcome_data)
+	_game_state.set_station_report(report)
+	_event_bus.publish(&"case_station_report", report)
 	_event_bus.publish(&"case_outcome_resolved", {
 		"case_id": _game_state.active_case_id,
 		"outcome_id": outcome_id,
 		"summary": summary
 	})
 	_decision_payload = {}
+
+func _build_station_report(action_id: StringName, outcome_id: StringName, political_capital_delta: int, outcome_data: Dictionary) -> Dictionary:
+	var reviewed_evidence: Array[String] = []
+	if _game_state.has_viewed_evidence(&"inbox_claim"):
+		reviewed_evidence.append("initial Falcon inbox claim")
+	if _game_state.has_viewed_evidence(&"intercept_clue"):
+		reviewed_evidence.append("SIGINT/intercept traffic")
+	if _game_state.has_viewed_evidence(&"nominal_logistics"):
+		reviewed_evidence.append("nominal logistics links")
+	if _game_state.has_viewed_evidence(&"map_airport_cafe"):
+		reviewed_evidence.append("cafe/airport map markers")
+
+	var evidence_note := "Desk review was incomplete before commitment."
+	if reviewed_evidence.size() >= 4:
+		evidence_note = "Review included %s." % ", ".join(reviewed_evidence)
+	elif reviewed_evidence.is_empty():
+		evidence_note = "No evidence panes were reviewed before dispatch."
+	else:
+		evidence_note = "Review included %s; other panes were left unverified." % ", ".join(reviewed_evidence)
+
+	return {
+		"case_id": _game_state.active_case_id,
+		"action_id": action_id,
+		"outcome_id": outcome_id,
+		"political_capital_delta": political_capital_delta,
+		"political_capital_total": _game_state.political_capital,
+		"summary": String(outcome_data.get("summary", "Outcome unavailable.")),
+		"operational_summary": String(outcome_data.get("operational_summary", "No additional operational detail available.")),
+		"evidence_note": evidence_note,
+		"forward_hook": String(outcome_data.get("forward_hook", "Recommend opening follow-on assessment with HQ counterparts."))
+	}
 
 func _load_case_content(content_files: Dictionary, case_root_path: String) -> Dictionary:
 	var content := {}

@@ -35,3 +35,5 @@ func _render_entry(index: int) -> void:
 	var entry: Dictionary = _entries[index]
 	name_value.text = String(entry.get("name", "Unknown"))
 	notes_value.text = String(entry.get("notes", "No notes."))
+	if String(entry.get("id", "")) == "local_official":
+		_game_state.mark_evidence_viewed(&"nominal_logistics")

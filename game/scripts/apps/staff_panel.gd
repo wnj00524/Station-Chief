@@ -13,6 +13,7 @@ func bind_systems(_clock: Clock, game_state: GameState, case_runner: CaseRunner)
 	_game_state = game_state
 	_case_runner = case_runner
 	_game_state.case_resolved.connect(_on_case_resolved)
+	_game_state.station_report_ready.connect(_on_station_report_ready)
 	_case_runner.decision_registered.connect(_on_decision_registered)
 	status_value.text = "Awaiting your order. Cross-check HUMINT and SIGINT before committing station assets."
 
@@ -42,6 +43,18 @@ func _on_decision_registered(_action_id: StringName, _resolve_at_minutes: float)
 
 func _on_case_resolved(outcome_id: StringName, summary: String) -> void:
 	status_value.text = "Result: [%s]\n%s\nPolitical Capital now %d." % [String(outcome_id), summary, _game_state.political_capital]
+
+func _on_station_report_ready(report: Dictionary) -> void:
+	status_value.text = "STATION REPORT\n"
+	status_value.text += "Action: %s\n" % String(report.get("action_id", "unknown")).replace("_", " ")
+	status_value.text += "Outcome: %s\n" % String(report.get("outcome_id", "unknown"))
+	status_value.text += "Political Capital Δ: %+d (Total %d)\n\n" % [
+		int(report.get("political_capital_delta", 0)),
+		int(report.get("political_capital_total", _game_state.political_capital))
+	]
+	status_value.text += "%s\n\n" % String(report.get("operational_summary", "No operational summary."))
+	status_value.text += "Evidence note: %s\n" % String(report.get("evidence_note", "No evidence note."))
+	status_value.text += "Forward hook: %s" % String(report.get("forward_hook", "No follow-up hook."))
 
 func _set_buttons_enabled(is_enabled: bool) -> void:
 	trust_button.disabled = not is_enabled

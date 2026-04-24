@@ -19,11 +19,26 @@
   },
   "scheduled_events": [
     {
-      "time_minutes": 488,
+      "time_minutes": 486,
+      "topic": "intel_ping",
+      "payload": {
+        "source": "WATCH DESK",
+        "message": "Falcon channel went quiet after initial cafe claim."
+      }
+    },
+    {
+      "time_minutes": 492,
       "topic": "intel_ping",
       "payload": {
         "source": "SIGINT",
-        "message": "Additional metadata sweep requested by HQ."
+        "message": "Secondary metadata sweep holds device near airport service road."
+      }
+    },
+    {
+      "time_minutes": 497,
+      "topic": "clock_pressure",
+      "payload": {
+        "message": "Operations notes convoy movement expected within the next 10 minutes."
       }
     }
   ],
@@ -39,19 +54,27 @@
   "outcomes": {
     "best": {
       "political_capital_delta": 2,
-      "summary": "Airport team captures the real handoff thread. Falcon's compromise is confirmed and an HIA logistics lead is preserved."
+      "summary": "Airport team captures the real handoff thread. Falcon's compromise is confirmed and an HIA logistics lead is preserved.",
+      "operational_summary": "Surveillance near the airport perimeter identified the courier handoff window and photographed the Local Official's security vehicle shadowing the exchange.",
+      "forward_hook": "Counterintelligence section requests authority to run a controlled leak to map the HIA handler's downstream contacts."
     },
     "partial": {
       "political_capital_delta": 1,
-      "summary": "Verification exposes the cafe report as bait, but response lag allows part of the handoff to slip."
+      "summary": "Verification exposes the cafe report as bait, but response lag allows part of the handoff to slip.",
+      "operational_summary": "Analyst review established contradiction between HUMINT and phone metadata, but mobile team reached the airport after the primary package departed.",
+      "forward_hook": "Liaison branch proposes reviewing airport logistics manifests from the prior 72 hours for shell-company overlap."
     },
     "failure": {
       "political_capital_delta": -2,
-      "summary": "Station commits to the cafe claim and misses the airport exchange, damaging credibility and exposing Falcon's channel."
+      "summary": "Station commits to the cafe claim and misses the airport exchange, damaging credibility and exposing Falcon's channel.",
+      "operational_summary": "Cafe surveillance burned personnel time while rival intermediaries completed transfer at the airport perimeter without contest.",
+      "forward_hook": "Regional desk directs an immediate source-protection audit before any further Falcon-channel tasking."
     },
     "defensive": {
       "political_capital_delta": -1,
-      "summary": "You avoid the trap by halting action, but lose initiative and return no actionable lead."
+      "summary": "You avoid the trap by halting action, but lose initiative and return no actionable lead.",
+      "operational_summary": "Station posture remained secure, yet both cafe and airport lanes went unexploited and the meeting network dispersed.",
+      "forward_hook": "HQ requests a tighter rapid-response protocol so future contradictory reporting can be acted on without full stand-down."
     }
   }
 }
