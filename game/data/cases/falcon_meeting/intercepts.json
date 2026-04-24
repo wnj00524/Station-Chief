@@ -2,18 +2,21 @@
   {
     "id": "intercept_route_shift",
     "timestamp": "08:05",
+    "available_at_minutes": 485,
     "channel": "SIGINT-META",
     "summary": "Device associated with Falcon registered near airport perimeter service road at 08:03 and remained active in that cell cluster."
   },
   {
     "id": "intercept_ambiguous_handoff",
     "timestamp": "08:07",
+    "available_at_minutes": 487,
     "channel": "VOICE-SCRAPE",
     "summary": "Partial call capture: 'Table is a decoy. Move the parcel before residence convoy rotates.' Speaker identity unresolved."
   },
   {
     "id": "intercept_logistics_ping",
     "timestamp": "08:11",
+    "available_at_minutes": 491,
     "channel": "RF-BURST",
     "summary": "Short encrypted burst references gate 'A-17' and confirms courier transfer window closing at 08:18 local."
   }

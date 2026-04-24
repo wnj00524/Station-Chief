@@ -40,15 +40,15 @@ func bind_systems(clock: Clock, event_bus: EventBus, game_state: GameState, case
 
 func _bind_apps() -> void:
 	if inbox_app.has_method("bind_systems"):
-		inbox_app.call("bind_systems", _clock, _game_state)
+		inbox_app.call("bind_systems", _clock, _game_state, _event_bus, _case_runner)
 	if nominals_app.has_method("bind_systems"):
-		nominals_app.call("bind_systems", _clock, _game_state)
+		nominals_app.call("bind_systems", _clock, _game_state, _event_bus, _case_runner)
 	if intercepts_app.has_method("bind_systems"):
-		intercepts_app.call("bind_systems", _clock, _game_state)
+		intercepts_app.call("bind_systems", _clock, _game_state, _event_bus, _case_runner)
 	if map_app.has_method("bind_systems"):
-		map_app.call("bind_systems", _clock, _game_state)
+		map_app.call("bind_systems", _clock, _game_state, _event_bus, _case_runner)
 	if staff_app.has_method("bind_systems"):
-		staff_app.call("bind_systems", _clock, _game_state, _case_runner)
+		staff_app.call("bind_systems", _clock, _game_state, _event_bus, _case_runner)
 
 func _bind_launchers() -> void:
 	launcher_inbox.pressed.connect(func() -> void: workspace_tabs.current_tab = 0)
@@ -69,6 +69,8 @@ func _on_game_event(topic: StringName, payload: Dictionary) -> void:
 		_append_feed("Case loaded: Falcon Meeting. Evidence channels are live.")
 	elif topic == &"case_station_report":
 		_append_feed("Station report filed for HQ review.")
+	elif topic == &"staff_status":
+		_append_feed("STAFF: %s" % String(payload.get("message", "Status update.")))
 
 func _on_political_capital_changed(_new_value: int) -> void:
 	_refresh_top_bar()

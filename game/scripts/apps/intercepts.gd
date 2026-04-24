@@ -8,13 +8,18 @@ extends Control
 var _game_state: GameState
 var _entries: Array = []
 
-func bind_systems(_clock: Clock, game_state: GameState) -> void:
+func bind_systems(_clock: Clock, game_state: GameState, _event_bus: EventBus = null, _case_runner: CaseRunner = null) -> void:
 	_game_state = game_state
 	_game_state.case_content_loaded.connect(_on_case_content_loaded)
+	_game_state.case_content_updated.connect(_on_case_content_updated)
 	_reload_entries()
 
 func _on_case_content_loaded(_case_id: StringName) -> void:
 	_reload_entries()
+
+func _on_case_content_updated(channel: StringName) -> void:
+	if channel == &"intercepts":
+		_reload_entries()
 
 func _reload_entries() -> void:
 	if _game_state == null:
@@ -24,8 +29,12 @@ func _reload_entries() -> void:
 	for entry: Dictionary in _entries:
 		list.add_item("%s | %s" % [entry.get("timestamp", "--:--"), entry.get("channel", "UNKNOWN")])
 	if not _entries.is_empty():
-		list.select(0)
-		_render_entry(0)
+		list.select(_entries.size() - 1)
+		_render_entry(_entries.size() - 1)
+	else:
+		channel_value.text = "NO CHANNEL"
+		timestamp_value.text = "--:--"
+		summary_value.text = "No intercept traffic posted yet."
 
 func _on_intercepts_list_item_selected(index: int) -> void:
 	_render_entry(index)

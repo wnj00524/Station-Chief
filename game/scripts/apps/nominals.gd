@@ -7,13 +7,18 @@ extends Control
 var _game_state: GameState
 var _entries: Array = []
 
-func bind_systems(_clock: Clock, game_state: GameState) -> void:
+func bind_systems(_clock: Clock, game_state: GameState, _event_bus: EventBus = null, _case_runner: CaseRunner = null) -> void:
 	_game_state = game_state
 	_game_state.case_content_loaded.connect(_on_case_content_loaded)
+	_game_state.case_content_updated.connect(_on_case_content_updated)
 	_reload_entries()
 
 func _on_case_content_loaded(_case_id: StringName) -> void:
 	_reload_entries()
+
+func _on_case_content_updated(channel: StringName) -> void:
+	if channel == &"nominals":
+		_reload_entries()
 
 func _reload_entries() -> void:
 	if _game_state == null:
@@ -25,6 +30,9 @@ func _reload_entries() -> void:
 	if not _entries.is_empty():
 		list.select(0)
 		_render_entry(0)
+	else:
+		name_value.text = "No nominal"
+		notes_value.text = "Nominal records pending."
 
 func _on_nominals_list_item_selected(index: int) -> void:
 	_render_entry(index)

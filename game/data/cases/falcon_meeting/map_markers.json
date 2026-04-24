@@ -1,5 +1,5 @@
 [
-  { "id": "cafe", "label": "Cafe", "x": 0.34, "y": 0.46 },
-  { "id": "airport_perimeter", "label": "Airport Perimeter", "x": 0.73, "y": 0.22 },
-  { "id": "official_residence", "label": "Official Residence", "x": 0.59, "y": 0.68 }
+  { "id": "cafe", "label": "Cafe", "available_at_minutes": 480, "x": 0.34, "y": 0.46 },
+  { "id": "airport_perimeter", "label": "Airport Perimeter", "available_at_minutes": 491, "x": 0.73, "y": 0.22 },
+  { "id": "official_residence", "label": "Official Residence", "available_at_minutes": 489, "x": 0.59, "y": 0.68 }
 ]
