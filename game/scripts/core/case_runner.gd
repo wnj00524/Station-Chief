@@ -3,15 +3,15 @@ extends Node
 
 signal decision_registered(action_id: StringName, resolution_time_minutes: float)
 
-var _event_bus: EventBus
-var _clock: Clock
-var _game_state: GameState
+var _event_bus
+var _clock
+var _game_state
 var _loaded_case: Dictionary = {}
 var _scheduled_events: Array[Dictionary] = []
 var _decision_payload: Dictionary = {}
 var _hidden_content_by_channel: Dictionary = {}
 
-func _init(event_bus: EventBus, clock: Clock, game_state: GameState) -> void:
+func _init(event_bus, clock, game_state) -> void:
 	_event_bus = event_bus
 	_clock = clock
 	_game_state = game_state

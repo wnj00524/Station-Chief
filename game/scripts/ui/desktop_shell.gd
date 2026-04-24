@@ -16,12 +16,12 @@ extends Control
 @onready var map_app: Control = %Map
 @onready var staff_app: Control = %StaffPanel
 
-var _clock: Clock
-var _event_bus: EventBus
-var _game_state: GameState
-var _case_runner: CaseRunner
+var _clock
+var _event_bus
+var _game_state
+var _case_runner
 
-func bind_systems(clock: Clock, event_bus: EventBus, game_state: GameState, case_runner: CaseRunner) -> void:
+func bind_systems(clock, event_bus, game_state, case_runner) -> void:
 	_clock = clock
 	_event_bus = event_bus
 	_game_state = game_state

@@ -6,11 +6,11 @@ extends Control
 @onready var surveil_button: Button = %ActionSurveil
 @onready var abort_button: Button = %ActionAbort
 
-var _game_state: GameState
-var _case_runner: CaseRunner
-var _event_bus: EventBus
+var _game_state
+var _case_runner
+var _event_bus
 
-func bind_systems(_clock: Clock, game_state: GameState, event_bus: EventBus = null, case_runner: CaseRunner = null) -> void:
+func bind_systems(_clock, game_state, event_bus = null, case_runner = null) -> void:
 	_game_state = game_state
 	_case_runner = case_runner
 	_event_bus = event_bus
