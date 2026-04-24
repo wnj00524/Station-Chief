@@ -37,3 +37,5 @@ func _render_entry(index: int) -> void:
 	channel_value.text = String(entry.get("channel", "UNKNOWN"))
 	timestamp_value.text = String(entry.get("timestamp", "--:--"))
 	summary_value.text = String(entry.get("summary", ""))
+	if String(entry.get("id", "")) == "intercept_route_shift":
+		_game_state.mark_evidence_viewed(&"intercept_clue")
