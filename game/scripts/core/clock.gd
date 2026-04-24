@@ -3,7 +3,7 @@ extends Node
 
 signal ticked(current_time: float)
 
-@export var minutes_per_second: float = 2.0
+@export var minutes_per_second: float = 1.0 / 30
 var mission_time_minutes: float = 8.0 * 60.0
 
 func _process(delta: float) -> void:
