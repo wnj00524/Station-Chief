@@ -1,9 +1,9 @@
 class_name AppWindow
 extends PanelContainer
 
-signal focus_requested(window: AppWindow)
-signal close_requested(window: AppWindow)
-signal minimize_requested(window: AppWindow)
+signal focus_requested(window: PanelContainer)
+signal close_requested(window: PanelContainer)
+signal minimize_requested(window: PanelContainer)
 
 @onready var title_label: Label = %WindowTitle
 @onready var content_host: MarginContainer = %WindowContent
