@@ -1,10 +1,10 @@
 extends Node
 
-const GameStateScript = preload("res://scripts/core/game_state.gd")
-const CaseRunnerScript = preload("res://scripts/core/case_runner.gd")
-const ClockScript = preload("res://scripts/core/clock.gd")
-const EventBusScript = preload("res://scripts/core/event_bus.gd")
-const DesktopShellScript = preload("res://scripts/ui/desktop_shell.gd")
+const GameStateScript: Script = preload("res://scripts/core/game_state.gd")
+const CaseRunnerScript: Script = preload("res://scripts/core/case_runner.gd")
+const ClockScript: Script = preload("res://scripts/core/clock.gd")
+const EventBusScript: Script = preload("res://scripts/core/event_bus.gd")
+const DesktopShellScript: Script = preload("res://scripts/ui/desktop_shell.gd")
 
 @onready var clock = $Clock
 @onready var event_bus = $EventBus

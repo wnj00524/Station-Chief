@@ -76,8 +76,8 @@ func _on_political_capital_changed(_new_value: int) -> void:
 	_refresh_top_bar()
 
 func _on_decision_registered(action_id: StringName, resolve_at_minutes: float) -> void:
-	var resolve_hour := int(resolve_at_minutes / 60.0) % 24
-	var resolve_minute := int(resolve_at_minutes) % 60
+	var resolve_hour: int = int(resolve_at_minutes / 60.0) % 24
+	var resolve_minute: int = int(resolve_at_minutes) % 60
 	_append_feed("Order logged: %s. Consequence expected around %02d:%02d." % [String(action_id).replace("_", " "), resolve_hour, resolve_minute])
 
 func _on_case_resolved(outcome_id: StringName, summary: String) -> void:

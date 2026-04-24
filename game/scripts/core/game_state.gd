@@ -58,14 +58,14 @@ func mark_case_resolved(outcome_id: StringName, summary: String) -> void:
 	case_resolved.emit(outcome_id, summary)
 
 func mark_evidence_viewed(category: StringName) -> void:
-	var key := "evidence_%s_viewed" % String(category)
+	var key: String = "evidence_%s_viewed" % String(category)
 	if bool(timeline_flags.get(key, false)):
 		return
 	timeline_flags[key] = true
 	evidence_viewed.emit(category)
 
 func has_viewed_evidence(category: StringName) -> bool:
-	var key := "evidence_%s_viewed" % String(category)
+	var key: String = "evidence_%s_viewed" % String(category)
 	return bool(timeline_flags.get(key, false))
 
 func set_station_report(report: Dictionary) -> void:
