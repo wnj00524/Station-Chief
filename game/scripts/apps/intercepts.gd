@@ -5,10 +5,10 @@ extends Control
 @onready var timestamp_value: Label = %InterceptTimestampValue
 @onready var summary_value: RichTextLabel = %InterceptSummaryValue
 
-var _game_state: GameState
+var _game_state
 var _entries: Array = []
 
-func bind_systems(_clock: Clock, game_state: GameState, _event_bus: EventBus = null, _case_runner: CaseRunner = null) -> void:
+func bind_systems(_clock, game_state, _event_bus = null, _case_runner = null) -> void:
 	_game_state = game_state
 	_game_state.case_content_loaded.connect(_on_case_content_loaded)
 	_game_state.case_content_updated.connect(_on_case_content_updated)
