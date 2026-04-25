@@ -17,6 +17,7 @@ var _hidden_content_by_channel: Dictionary = {}
 var _pending_analyses: Array[Dictionary] = []
 var _case_registry: Array[Dictionary] = []
 var _active_seed: int = 0
+var _last_processed_minute_bucket: int = -1
 
 func _init(event_bus, clock, game_state) -> void:
 	_event_bus = event_bus
@@ -50,7 +51,7 @@ func start_case(case_id: StringName, seed: int = -1) -> bool:
 		return false
 
 	if seed < 0:
-		seed = int(Time.get_unix_time_from_system() % 2147483647)
+		seed = int(Time.get_unix_time_from_system()) % 2147483647
 	_active_seed = seed
 	_rng.seed = seed
 
@@ -149,11 +150,14 @@ func commit_player_action(action_id: StringName) -> bool:
 	return true
 
 func _on_clock_ticked(_mission_time: float) -> void:
-	_process_scheduled_events()
-	_reveal_due_content()
-	_process_pending_analysis()
-	_process_no_decision_pressure()
+	var current_minute_bucket: int = int(floor(_clock.mission_time_minutes))
+	if current_minute_bucket != _last_processed_minute_bucket:
+		_last_processed_minute_bucket = current_minute_bucket
+		_process_scheduled_events()
+		_reveal_due_content()
+		_process_no_decision_pressure()
 	_process_outcome_resolution()
+	_process_pending_analysis()
 
 func _load_case_registry() -> void:
 	_case_registry.clear()
@@ -182,6 +186,7 @@ func _reset_run_state() -> void:
 	_pending_analyses.clear()
 	_decision_payload = {}
 	_hidden_content_by_channel = {}
+	_last_processed_minute_bucket = -1
 	for scheduled_event: Dictionary in _loaded_case.get("scheduled_events", []):
 		var event_copy: Dictionary = scheduled_event.duplicate(true)
 		event_copy["fired"] = false
