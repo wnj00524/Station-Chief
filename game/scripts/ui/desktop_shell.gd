@@ -62,15 +62,29 @@ func _build_app_shell() -> void:
 			app_control.call("bind_systems", _clock, _game_state, _event_bus, _case_runner)
 
 func _register_app(app_id: StringName, title: String, scene: PackedScene, position: Vector2, size: Vector2) -> void:
-	var app_control: Control = scene.instantiate()
+	if scene == null:
+		push_error("DesktopShell._register_app failed: scene is null for '%s'" % String(app_id))
+		return
+
+	var app_instance := scene.instantiate()
+	var app_control := app_instance as Control
+	if app_control == null:
+		push_error("DesktopShell._register_app failed: scene root is not Control for '%s'" % String(app_id))
+		if app_instance != null:
+			app_instance.queue_free()
+		return
 	_app_instances[app_id] = app_control
 
-	var app_window = app_window_prototype.duplicate()
+	var app_window := app_window_prototype.duplicate() as AppWindow
+	if app_window == null:
+		push_error("DesktopShell._register_app failed: could not duplicate AppWindow prototype for '%s'" % String(app_id))
+		return
+
+	desktop_area.add_child(app_window)
 	app_window.visible = false
 	app_window.position = position
 	app_window.custom_minimum_size = size
 	app_window.size = size
-	desktop_area.add_child(app_window)
 	app_window.configure(app_id, title, app_control)
 	app_window.focus_requested.connect(_on_window_focus_requested)
 	app_window.close_requested.connect(_on_window_close_requested)
