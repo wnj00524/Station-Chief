@@ -23,62 +23,79 @@ theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
 
-[node name="HBox" type="HBoxContainer" parent="Margin"]
+[node name="VBox" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
 
-[node name="InterceptsList" type="ItemList" parent="Margin/HBox"]
+[node name="FilterRow" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+
+[node name="FilterLabel" type="Label" parent="Margin/VBox/FilterRow"]
+layout_mode = 2
+text = "Filter tag"
+
+[node name="InterceptTagFilter" type="OptionButton" parent="Margin/VBox/FilterRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBox" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="InterceptsList" type="ItemList" parent="Margin/VBox/HBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(280, 0)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="InterceptPanel" type="PanelContainer" parent="Margin/HBox"]
+[node name="InterceptPanel" type="PanelContainer" parent="Margin/VBox/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="InterceptMargin" type="MarginContainer" parent="Margin/HBox/InterceptPanel"]
+[node name="InterceptMargin" type="MarginContainer" parent="Margin/VBox/HBox/InterceptPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="InterceptVBox" type="VBoxContainer" parent="Margin/HBox/InterceptPanel/InterceptMargin"]
+[node name="InterceptVBox" type="VBoxContainer" parent="Margin/VBox/HBox/InterceptPanel/InterceptMargin"]
 layout_mode = 2
 
-[node name="InterceptChannelValue" type="Label" parent="Margin/HBox/InterceptPanel/InterceptMargin/InterceptVBox"]
+[node name="InterceptChannelValue" type="Label" parent="Margin/VBox/HBox/InterceptPanel/InterceptMargin/InterceptVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "CHANNEL"
 
-[node name="InterceptTimestampValue" type="Label" parent="Margin/HBox/InterceptPanel/InterceptMargin/InterceptVBox"]
+[node name="InterceptTimestampValue" type="Label" parent="Margin/VBox/HBox/InterceptPanel/InterceptMargin/InterceptVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "TIME"
 
-[node name="InterceptSummaryValue" type="RichTextLabel" parent="Margin/HBox/InterceptPanel/InterceptMargin/InterceptVBox"]
+[node name="InterceptSummaryValue" type="RichTextLabel" parent="Margin/VBox/HBox/InterceptPanel/InterceptMargin/InterceptVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 text = "Summary"
 
-[node name="TagRow" type="HBoxContainer" parent="Margin/HBox/InterceptPanel/InterceptMargin/InterceptVBox"]
+[node name="TagRow" type="HBoxContainer" parent="Margin/VBox/HBox/InterceptPanel/InterceptMargin/InterceptVBox"]
 layout_mode = 2
 
-[node name="InterceptTagInput" type="LineEdit" parent="Margin/HBox/InterceptPanel/InterceptMargin/InterceptVBox/TagRow"]
+[node name="InterceptTagInput" type="LineEdit" parent="Margin/VBox/HBox/InterceptPanel/InterceptMargin/InterceptVBox/TagRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Add tag"
 
-[node name="InterceptAddTag" type="Button" parent="Margin/HBox/InterceptPanel/InterceptMargin/InterceptVBox/TagRow"]
+[node name="InterceptAddTag" type="Button" parent="Margin/VBox/HBox/InterceptPanel/InterceptMargin/InterceptVBox/TagRow"]
 layout_mode = 2
 text = "Tag"
 
-[node name="InterceptTagsValue" type="Label" parent="Margin/HBox/InterceptPanel/InterceptMargin/InterceptVBox"]
+[node name="InterceptTagsValue" type="Label" parent="Margin/VBox/HBox/InterceptPanel/InterceptMargin/InterceptVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Tags: --"
 
-[connection signal="item_selected" from="Margin/HBox/InterceptsList" to="." method="_on_intercepts_list_item_selected"]
-[connection signal="pressed" from="Margin/HBox/InterceptPanel/InterceptMargin/InterceptVBox/TagRow/InterceptAddTag" to="." method="_on_intercept_add_tag_pressed"]
+[connection signal="item_selected" from="Margin/VBox/HBox/InterceptsList" to="." method="_on_intercepts_list_item_selected"]
+[connection signal="item_selected" from="Margin/VBox/FilterRow/InterceptTagFilter" to="." method="_on_intercept_tag_filter_item_selected"]
+[connection signal="pressed" from="Margin/VBox/HBox/InterceptPanel/InterceptMargin/InterceptVBox/TagRow/InterceptAddTag" to="." method="_on_intercept_add_tag_pressed"]

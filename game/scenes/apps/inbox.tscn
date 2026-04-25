@@ -23,68 +23,85 @@ theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
 
-[node name="HBox" type="HBoxContainer" parent="Margin"]
+[node name="VBox" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
 
-[node name="InboxMessageList" type="ItemList" parent="Margin/HBox"]
+[node name="FilterRow" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+
+[node name="FilterLabel" type="Label" parent="Margin/VBox/FilterRow"]
+layout_mode = 2
+text = "Filter tag"
+
+[node name="InboxTagFilter" type="OptionButton" parent="Margin/VBox/FilterRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBox" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="InboxMessageList" type="ItemList" parent="Margin/VBox/HBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(280, 0)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="MessagePanel" type="PanelContainer" parent="Margin/HBox"]
+[node name="MessagePanel" type="PanelContainer" parent="Margin/VBox/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="MessageMargin" type="MarginContainer" parent="Margin/HBox/MessagePanel"]
+[node name="MessageMargin" type="MarginContainer" parent="Margin/VBox/HBox/MessagePanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="MessageVBox" type="VBoxContainer" parent="Margin/HBox/MessagePanel/MessageMargin"]
+[node name="MessageVBox" type="VBoxContainer" parent="Margin/VBox/HBox/MessagePanel/MessageMargin"]
 layout_mode = 2
 
-[node name="InboxFromValue" type="Label" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox"]
+[node name="InboxFromValue" type="Label" parent="Margin/VBox/HBox/MessagePanel/MessageMargin/MessageVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "FROM: --"
 
-[node name="InboxSubjectValue" type="Label" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox"]
+[node name="InboxSubjectValue" type="Label" parent="Margin/VBox/HBox/MessagePanel/MessageMargin/MessageVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "SUBJECT: --"
 
-[node name="InboxTimestampValue" type="Label" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox"]
+[node name="InboxTimestampValue" type="Label" parent="Margin/VBox/HBox/MessagePanel/MessageMargin/MessageVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "TIME: --"
 
-[node name="InboxBodyValue" type="RichTextLabel" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox"]
+[node name="InboxBodyValue" type="RichTextLabel" parent="Margin/VBox/HBox/MessagePanel/MessageMargin/MessageVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true
 text = "Message body"
 
-[node name="TagRow" type="HBoxContainer" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox"]
+[node name="TagRow" type="HBoxContainer" parent="Margin/VBox/HBox/MessagePanel/MessageMargin/MessageVBox"]
 layout_mode = 2
 
-[node name="InboxTagInput" type="LineEdit" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox/TagRow"]
+[node name="InboxTagInput" type="LineEdit" parent="Margin/VBox/HBox/MessagePanel/MessageMargin/MessageVBox/TagRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Add tag"
 
-[node name="InboxAddTag" type="Button" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox/TagRow"]
+[node name="InboxAddTag" type="Button" parent="Margin/VBox/HBox/MessagePanel/MessageMargin/MessageVBox/TagRow"]
 layout_mode = 2
 text = "Tag"
 
-[node name="InboxTagsValue" type="Label" parent="Margin/HBox/MessagePanel/MessageMargin/MessageVBox"]
+[node name="InboxTagsValue" type="Label" parent="Margin/VBox/HBox/MessagePanel/MessageMargin/MessageVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Tags: --"
 
-[connection signal="item_selected" from="Margin/HBox/InboxMessageList" to="." method="_on_inbox_message_list_item_selected"]
-[connection signal="pressed" from="Margin/HBox/MessagePanel/MessageMargin/MessageVBox/TagRow/InboxAddTag" to="." method="_on_inbox_add_tag_pressed"]
+[connection signal="item_selected" from="Margin/VBox/HBox/InboxMessageList" to="." method="_on_inbox_message_list_item_selected"]
+[connection signal="item_selected" from="Margin/VBox/FilterRow/InboxTagFilter" to="." method="_on_inbox_tag_filter_item_selected"]
+[connection signal="pressed" from="Margin/VBox/HBox/MessagePanel/MessageMargin/MessageVBox/TagRow/InboxAddTag" to="." method="_on_inbox_add_tag_pressed"]

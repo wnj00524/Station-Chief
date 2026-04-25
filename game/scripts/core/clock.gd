@@ -10,6 +10,10 @@ func _process(delta: float) -> void:
 	mission_time_minutes += delta * minutes_per_second
 	ticked.emit(mission_time_minutes)
 
+func reset_time(start_minutes: float) -> void:
+	mission_time_minutes = start_minutes
+	ticked.emit(mission_time_minutes)
+
 func format_time() -> String:
 	var hours: int = int(mission_time_minutes / 60.0) % 24
 	var minutes: int = int(mission_time_minutes) % 60

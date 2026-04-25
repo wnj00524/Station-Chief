@@ -27,6 +27,21 @@ var station_report: Dictionary = {}
 var player_tags: Dictionary = {}
 var analysts: Array[Dictionary] = []
 
+func reset_case_state(case_id: StringName, truth: Dictionary, starting_political_capital: int) -> void:
+	active_case_id = case_id
+	hidden_truth = truth.duplicate(true)
+	political_capital = starting_political_capital
+	timeline_flags = {}
+	case_content = {}
+	decision_locked = false
+	selected_action_id = &""
+	decision_committed_at_minutes = -1.0
+	resolved_outcome_id = &""
+	station_report = {}
+	player_tags = {}
+	set_case_phase(&"briefing")
+	political_capital_changed.emit(political_capital)
+
 func apply_political_capital(delta_value: int) -> void:
 	political_capital += delta_value
 	political_capital_changed.emit(political_capital)
@@ -93,6 +108,17 @@ func add_tag(item_type: StringName, item_id: String, tag_text: String) -> void:
 func get_tags(item_type: StringName, item_id: String) -> Array:
 	var key: String = "%s:%s" % [String(item_type), item_id]
 	return player_tags.get(key, [])
+
+func get_all_tags() -> Array[String]:
+	var unique: Dictionary = {}
+	for key in player_tags.keys():
+		for tag: String in player_tags[key]:
+			unique[tag] = true
+	var tags: Array[String] = []
+	for tag in unique.keys():
+		tags.append(String(tag))
+	tags.sort()
+	return tags
 
 func set_analysts(new_analysts: Array[Dictionary]) -> void:
 	analysts = new_analysts

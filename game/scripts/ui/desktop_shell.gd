@@ -6,6 +6,7 @@ const NominalsScene: PackedScene = preload("res://scenes/apps/nominals.tscn")
 const InterceptsScene: PackedScene = preload("res://scenes/apps/intercepts.tscn")
 const MapScene: PackedScene = preload("res://scenes/apps/map.tscn")
 const StaffScene: PackedScene = preload("res://scenes/apps/staff_panel.tscn")
+const DebriefScene: PackedScene = preload("res://scenes/apps/debrief.tscn")
 const TerminalScene: PackedScene = preload("res://scenes/apps/terminal_stub.tscn")
 const APP_WINDOW_SCENE: PackedScene = preload("res://scenes/ui/app_window.tscn")
 
@@ -54,6 +55,7 @@ func _build_app_shell() -> void:
 	_register_app(&"intercepts", "Intercepts", InterceptsScene, Vector2(120, 120), Vector2(620, 360))
 	_register_app(&"map", "Map", MapScene, Vector2(240, 46), Vector2(560, 320))
 	_register_app(&"staff", "Staff", StaffScene, Vector2(270, 140), Vector2(560, 330))
+	_register_app(&"debrief", "Debrief", DebriefScene, Vector2(80, 30), Vector2(700, 420))
 	_register_app(&"terminal", "Terminal", TerminalScene, Vector2(210, 90), Vector2(520, 280))
 
 	for app_id in _app_instances.keys():
@@ -109,20 +111,20 @@ func _open_app(app_id: StringName) -> void:
 		_minimized_buttons[app_id].queue_free()
 		_minimized_buttons.erase(app_id)
 
-func _focus_window(app_window) -> void:
+func _focus_window(app_window: AppWindow) -> void:
 	desktop_area.move_child(app_window, desktop_area.get_child_count() - 1)
 
-func _on_window_focus_requested(app_window) -> void:
+func _on_window_focus_requested(app_window: AppWindow) -> void:
 	_focus_window(app_window)
 
-func _on_window_close_requested(app_window) -> void:
+func _on_window_close_requested(app_window: AppWindow) -> void:
 	app_window.visible = false
 	app_window.is_minimized = false
 	if _minimized_buttons.has(app_window.app_id):
 		_minimized_buttons[app_window.app_id].queue_free()
 		_minimized_buttons.erase(app_window.app_id)
 
-func _on_window_minimize_requested(app_window) -> void:
+func _on_window_minimize_requested(app_window: AppWindow) -> void:
 	if app_window.is_minimized:
 		return
 	app_window.minimize_window()
@@ -145,7 +147,7 @@ func _on_game_event(topic: StringName, payload: Dictionary) -> void:
 	elif topic == &"clock_pressure":
 		_append_feed("%s" % payload.get("message", "Station timeline update."))
 	elif topic == &"case_loaded":
-		_append_feed("Case loaded: Falcon family seed active. Evidence channels are live.")
+		_append_feed("Case loaded: %s (seed %s)." % [String(payload.get("case_id", "unknown")), String(payload.get("seed", "n/a"))])
 	elif topic == &"case_station_report":
 		_append_feed("Station report filed for HQ review.")
 	elif topic == &"staff_status":
@@ -163,6 +165,7 @@ func _on_decision_registered(action_id: StringName, resolve_at_minutes: float) -
 
 func _on_case_resolved(outcome_id: StringName, summary: String) -> void:
 	_append_feed("Outcome [%s]: %s" % [String(outcome_id), summary])
+	_open_app(&"debrief")
 
 func _on_station_report_ready(report: Dictionary) -> void:
 	_append_feed("REPORT // ACTION: %s | ΔPC: %+d | TOTAL: %d" % [
@@ -171,8 +174,7 @@ func _on_station_report_ready(report: Dictionary) -> void:
 		int(report.get("political_capital_total", _game_state.political_capital))
 	])
 	_append_feed("REPORT // %s" % String(report.get("operational_summary", "No operational summary.")))
-	_append_feed("REPORT // %s" % String(report.get("evidence_note", "Evidence notes unavailable.")))
-	_append_feed("REPORT // FORWARD: %s" % String(report.get("forward_hook", "No forward hook available.")))
+	_append_feed("REPORT // TRUTH: %s" % String(report.get("ground_truth_summary", "No ground truth summary.")))
 
 func _refresh_top_bar() -> void:
 	if _clock != null:
