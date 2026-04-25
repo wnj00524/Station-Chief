@@ -65,13 +65,13 @@ func _build_app_shell() -> void:
 
 func _register_app(app_id: StringName, title: String, scene: PackedScene, position: Vector2, size: Vector2) -> void:
 	if scene == null:
-		push_error("DesktopShell._register_app failed: scene is null for '%s'" % String(app_id))
+		push_error("DesktopShell._register_app failed: scene is null for '%s'" % str(app_id))
 		return
 
 	var app_instance := scene.instantiate()
 	var app_control := app_instance as Control
 	if app_control == null:
-		push_error("DesktopShell._register_app failed: scene root is not Control for '%s'" % String(app_id))
+		push_error("DesktopShell._register_app failed: scene root is not Control for '%s'" % str(app_id))
 		if app_instance != null:
 			app_instance.queue_free()
 		return
@@ -79,7 +79,7 @@ func _register_app(app_id: StringName, title: String, scene: PackedScene, positi
 
 	var app_window := APP_WINDOW_SCENE.instantiate() as AppWindow
 	if app_window == null:
-		push_error("DesktopShell._register_app failed: could not instantiate AppWindow for '%s'" % String(app_id))
+		push_error("DesktopShell._register_app failed: could not instantiate AppWindow for '%s'" % str(app_id))
 		return
 
 	desktop_area.add_child(app_window)
@@ -131,7 +131,7 @@ func _on_window_minimize_requested(app_window: AppWindow) -> void:
 	if _minimized_buttons.has(app_window.app_id):
 		return
 	var reopen_button := Button.new()
-	reopen_button.text = String(app_window.app_id).capitalize()
+	reopen_button.text = str(app_window.app_id).capitalize()
 	reopen_button.pressed.connect(func() -> void:
 		_open_app(app_window.app_id)
 	)
@@ -147,13 +147,13 @@ func _on_game_event(topic: StringName, payload: Dictionary) -> void:
 	elif topic == &"clock_pressure":
 		_append_feed("%s" % payload.get("message", "Station timeline update."))
 	elif topic == &"case_loaded":
-		_append_feed("Case loaded: %s (seed %s)." % [String(payload.get("case_id", "unknown")), String(payload.get("seed", "n/a"))])
+		_append_feed("Case loaded: %s (seed %s)." % [str(payload.get("case_id", "unknown")), str(payload.get("seed", "n/a"))])
 	elif topic == &"case_station_report":
 		_append_feed("Station report filed for HQ review.")
 	elif topic == &"staff_status":
-		_append_feed("STAFF: %s" % String(payload.get("message", "Status update.")))
+		_append_feed("STAFF: %s" % str(payload.get("message", "Status update.")))
 	elif topic == &"staff_analysis_ready":
-		_append_feed("STAFF REPORT: %s" % String(payload.get("summary", "Analysis ready.")))
+		_append_feed("STAFF REPORT: %s" % str(payload.get("summary", "Analysis ready.")))
 
 func _on_political_capital_changed(_new_value: int) -> void:
 	_refresh_top_bar()
@@ -161,20 +161,20 @@ func _on_political_capital_changed(_new_value: int) -> void:
 func _on_decision_registered(action_id: StringName, resolve_at_minutes: float) -> void:
 	var resolve_hour: int = int(resolve_at_minutes / 60.0) % 24
 	var resolve_minute: int = int(resolve_at_minutes) % 60
-	_append_feed("Order logged: %s. Consequence expected around %02d:%02d." % [String(action_id).replace("_", " "), resolve_hour, resolve_minute])
+	_append_feed("Order logged: %s. Consequence expected around %02d:%02d." % [str(action_id).replace("_", " "), resolve_hour, resolve_minute])
 
 func _on_case_resolved(outcome_id: StringName, summary: String) -> void:
-	_append_feed("Outcome [%s]: %s" % [String(outcome_id), summary])
+	_append_feed("Outcome [%s]: %s" % [str(outcome_id), summary])
 	_open_app(&"debrief")
 
 func _on_station_report_ready(report: Dictionary) -> void:
 	_append_feed("REPORT // ACTION: %s | ΔPC: %+d | TOTAL: %d" % [
-		String(report.get("action_id", "unknown")).replace("_", " "),
+		str(report.get("action_id", "unknown")).replace("_", " "),
 		int(report.get("political_capital_delta", 0)),
 		int(report.get("political_capital_total", _game_state.political_capital))
 	])
-	_append_feed("REPORT // %s" % String(report.get("operational_summary", "No operational summary.")))
-	_append_feed("REPORT // TRUTH: %s" % String(report.get("ground_truth_summary", "No ground truth summary.")))
+	_append_feed("REPORT // %s" % str(report.get("operational_summary", "No operational summary.")))
+	_append_feed("REPORT // TRUTH: %s" % str(report.get("ground_truth_summary", "No ground truth summary.")))
 
 func _refresh_top_bar() -> void:
 	if _clock != null:
