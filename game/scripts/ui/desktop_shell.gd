@@ -7,13 +7,13 @@ const InterceptsScene: PackedScene = preload("res://scenes/apps/intercepts.tscn"
 const MapScene: PackedScene = preload("res://scenes/apps/map.tscn")
 const StaffScene: PackedScene = preload("res://scenes/apps/staff_panel.tscn")
 const TerminalScene: PackedScene = preload("res://scenes/apps/terminal_stub.tscn")
+const APP_WINDOW_SCENE: PackedScene = preload("res://scenes/ui/app_window.tscn")
 
 @onready var clock_label: Label = %ClockLabel
 @onready var political_capital_label: Label = %PoliticalCapitalLabel
 @onready var feed_log: RichTextLabel = %FeedLog
 @onready var desktop_area: Control = %DesktopArea
 @onready var taskbar: HBoxContainer = %Taskbar
-@onready var app_window_prototype = %AppWindowPrototype
 
 @onready var launcher_inbox: Button = %LauncherInbox
 @onready var launcher_database: Button = %LauncherDatabase
@@ -75,9 +75,9 @@ func _register_app(app_id: StringName, title: String, scene: PackedScene, positi
 		return
 	_app_instances[app_id] = app_control
 
-	var app_window := app_window_prototype.duplicate() as AppWindow
+	var app_window := APP_WINDOW_SCENE.instantiate() as AppWindow
 	if app_window == null:
-		push_error("DesktopShell._register_app failed: could not duplicate AppWindow prototype for '%s'" % String(app_id))
+		push_error("DesktopShell._register_app failed: could not instantiate AppWindow for '%s'" % String(app_id))
 		return
 
 	desktop_area.add_child(app_window)
