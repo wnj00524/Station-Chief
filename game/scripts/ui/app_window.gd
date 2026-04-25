@@ -1,5 +1,5 @@
-class_name AppWindow
 extends PanelContainer
+class_name AppWindow
 
 signal focus_requested(window: PanelContainer)
 signal close_requested(window: PanelContainer)
