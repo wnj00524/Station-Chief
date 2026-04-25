@@ -51,7 +51,7 @@ func set_case_content(content: Dictionary) -> void:
 	case_content_loaded.emit(active_case_id)
 
 func update_case_content_channel(channel: StringName, entries: Array) -> void:
-	case_content[String(channel)] = entries
+	case_content[channel] = entries
 	case_content_updated.emit(channel)
 
 func set_case_phase(phase: StringName) -> void:
@@ -77,14 +77,14 @@ func mark_case_resolved(outcome_id: StringName, summary: String) -> void:
 	case_resolved.emit(outcome_id, summary)
 
 func mark_evidence_viewed(category: StringName) -> void:
-	var key: String = "evidence_%s_viewed" % String(category)
+	var key: String = "evidence_%s_viewed" % category
 	if bool(timeline_flags.get(key, false)):
 		return
 	timeline_flags[key] = true
 	evidence_viewed.emit(category)
 
 func has_viewed_evidence(category: StringName) -> bool:
-	var key: String = "evidence_%s_viewed" % String(category)
+	var key: String = "evidence_%s_viewed" % category
 	return bool(timeline_flags.get(key, false))
 
 func set_station_report(report: Dictionary) -> void:
@@ -97,16 +97,16 @@ func add_tag(item_type: StringName, item_id: String, tag_text: String) -> void:
 	var cleaned_tag: String = tag_text.strip_edges()
 	if cleaned_tag == "":
 		return
-	var key: StringName = StringName("%s:%s" % [String(item_type), item_id])
-	var tags: Array = player_tags.get(String(key), [])
+	var key: StringName = StringName("%s:%s" % [item_type, item_id])
+	var tags: Array = player_tags.get(key, [])
 	if tags.has(cleaned_tag):
 		return
 	tags.append(cleaned_tag)
-	player_tags[String(key)] = tags
+	player_tags[key] = tags
 	tags_updated.emit(key)
 
 func get_tags(item_type: StringName, item_id: String) -> Array:
-	var key: String = "%s:%s" % [String(item_type), item_id]
+	var key: StringName = StringName("%s:%s" % [item_type, item_id])
 	return player_tags.get(key, [])
 
 func get_all_tags() -> Array[String]:
@@ -116,7 +116,7 @@ func get_all_tags() -> Array[String]:
 			unique[tag] = true
 	var tags: Array[String] = []
 	for tag in unique.keys():
-		tags.append(String(tag))
+		tags.append(str(tag))
 	tags.sort()
 	return tags
 

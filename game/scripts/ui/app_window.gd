@@ -29,7 +29,7 @@ func configure(new_app_id: StringName, title: String, content: Control) -> void:
 		push_error("AppWindow.configure failed: %WindowContent is missing in app_window.tscn")
 		return
 	if content == null:
-		push_error("AppWindow.configure failed: content is null for app '%s'" % String(new_app_id))
+		push_error("AppWindow.configure failed: content is null for app '%s'" % new_app_id)
 		return
 
 	title_label.text = title
