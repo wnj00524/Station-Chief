@@ -13,10 +13,25 @@ var is_minimized: bool = false
 
 func configure(new_app_id: StringName, title: String, content: Control) -> void:
 	app_id = new_app_id
+	if title_label == null:
+		push_error("AppWindow.configure failed: %WindowTitle is missing in app_window.tscn")
+		return
+	if content_host == null:
+		push_error("AppWindow.configure failed: %WindowContent is missing in app_window.tscn")
+		return
+	if content == null:
+		push_error("AppWindow.configure failed: content is null for app '%s'" % String(new_app_id))
+		return
+
 	title_label.text = title
 	for child in content_host.get_children():
 		content_host.remove_child(child)
-	content.reparent(content_host)
+
+	if content.get_parent() != null:
+		content.reparent(content_host)
+	else:
+		content_host.add_child(content)
+
 	content.layout_mode = 2
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
