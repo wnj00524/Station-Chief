@@ -4,6 +4,8 @@ extends Node
 signal decision_registered(action_id: StringName, resolution_time_minutes: float)
 signal analysis_assigned(analyst_id: StringName, target_label: String, ready_at_minutes: float)
 
+const CASE_REGISTRY_PATH: String = "res://data/cases/case_registry.json"
+
 var _event_bus
 var _clock
 var _game_state
@@ -13,59 +15,73 @@ var _scheduled_events: Array[Dictionary] = []
 var _decision_payload: Dictionary = {}
 var _hidden_content_by_channel: Dictionary = {}
 var _pending_analyses: Array[Dictionary] = []
+var _case_registry: Array[Dictionary] = []
+var _active_seed: int = 0
 
 func _init(event_bus, clock, game_state) -> void:
 	_event_bus = event_bus
 	_clock = clock
 	_game_state = game_state
 	_rng.randomize()
+	_load_case_registry()
 
 func _ready() -> void:
 	_clock.ticked.connect(_on_clock_ticked)
 
-func load_case(case_path: String) -> void:
-	if not FileAccess.file_exists(case_path):
-		push_warning("Case file not found: %s" % case_path)
-		return
+func list_cases() -> Array[Dictionary]:
+	return _case_registry.duplicate(true)
+
+func get_active_seed() -> int:
+	return _active_seed
+
+func start_case(case_id: StringName, seed: int = -1) -> bool:
+	if _case_registry.is_empty():
+		_load_case_registry()
+	if _case_registry.is_empty():
+		push_warning("No cases available in registry")
+		return false
+
+	var case_entry: Dictionary = _find_case_entry(case_id)
+	if case_entry.is_empty():
+		push_warning("Case id not found in registry: %s" % String(case_id))
+		return false
+	var case_path: String = String(case_entry.get("path", ""))
+	if case_path == "":
+		return false
+
+	if seed < 0:
+		seed = int(Time.get_unix_time_from_system() % 2147483647)
+	_active_seed = seed
+	_rng.seed = seed
 
 	var parsed: Variant = _read_json(case_path)
 	if typeof(parsed) != TYPE_DICTIONARY:
 		push_warning("Case file is not a dictionary: %s" % case_path)
-		return
-
+		return false
 	_loaded_case = parsed
-	_game_state.active_case_id = StringName(_loaded_case.get("id", ""))
-	_game_state.hidden_truth = _loaded_case.get("hidden_truth", {})
-	_game_state.political_capital = int(_loaded_case.get("starting_political_capital", 0))
-	_game_state.timeline_flags = {}
-	_game_state.player_tags = {}
-	_game_state.decision_locked = false
-	_game_state.selected_action_id = &""
-	_game_state.decision_committed_at_minutes = -1.0
-	_game_state.resolved_outcome_id = &""
-	_game_state.station_report = {}
-	_game_state.set_case_phase(&"briefing")
-	_game_state.set_staff_status("Falcon channel active. Watch desk awaiting tasking.")
-	_game_state.set_analysts(_build_analysts())
-	_scheduled_events.clear()
-	_pending_analyses.clear()
-	_decision_payload = {}
-	_hidden_content_by_channel = {}
 
-	var content: Dictionary = _load_case_content(_loaded_case.get("content_files", {}), case_path.get_base_dir())
-	content = _generate_case_variant(content)
-	content = _inject_noise_content(content)
-	var visible_content: Dictionary = _partition_content_by_availability(content)
-	_game_state.set_case_content(visible_content)
-	_game_state.set_case_phase(&"live_window")
-
-	for scheduled_event: Dictionary in _loaded_case.get("scheduled_events", []):
-		var event_copy: Dictionary = scheduled_event.duplicate(true)
-		event_copy["fired"] = false
-		_scheduled_events.append(event_copy)
-
-	_event_bus.publish(&"case_loaded", {"case_id": _game_state.active_case_id})
+	_reset_run_state()
+	_load_case_content_for_active_definition(case_path)
+	_event_bus.publish(&"case_loaded", {
+		"case_id": _game_state.active_case_id,
+		"seed": _active_seed
+	})
 	_event_bus.publish(&"staff_status", {"message": _game_state.staff_status})
+	return true
+
+func start_random_case(seed: int = -1) -> bool:
+	if _case_registry.is_empty():
+		_load_case_registry()
+	if _case_registry.is_empty():
+		return false
+	var index: int = _rng.randi_range(0, _case_registry.size() - 1)
+	var case_id: StringName = StringName(_case_registry[index].get("id", ""))
+	return start_case(case_id, seed)
+
+func restart_active_case_with_new_seed() -> bool:
+	if _game_state.active_case_id == &"":
+		return start_random_case()
+	return start_case(_game_state.active_case_id, -1)
 
 func assign_analysis(analyst_id: StringName, target: Dictionary) -> bool:
 	if _game_state.case_phase == &"resolved":
@@ -139,6 +155,46 @@ func _on_clock_ticked(_mission_time: float) -> void:
 	_process_no_decision_pressure()
 	_process_outcome_resolution()
 
+func _load_case_registry() -> void:
+	_case_registry.clear()
+	var parsed: Variant = _read_json(CASE_REGISTRY_PATH)
+	if typeof(parsed) == TYPE_ARRAY:
+		for entry: Dictionary in parsed:
+			_case_registry.append(entry)
+
+func _find_case_entry(case_id: StringName) -> Dictionary:
+	for entry: Dictionary in _case_registry:
+		if StringName(entry.get("id", "")) == case_id:
+			return entry
+	return {}
+
+func _reset_run_state() -> void:
+	var start_minutes: float = float(_loaded_case.get("start_time_minutes", 8.0 * 60.0))
+	_clock.reset_time(start_minutes)
+	_game_state.reset_case_state(
+		StringName(_loaded_case.get("id", "")),
+		_loaded_case.get("hidden_truth", {}),
+		int(_loaded_case.get("starting_political_capital", 0))
+	)
+	_game_state.set_staff_status("Falcon channel active. Watch desk awaiting tasking.")
+	_game_state.set_analysts(_build_analysts())
+	_scheduled_events.clear()
+	_pending_analyses.clear()
+	_decision_payload = {}
+	_hidden_content_by_channel = {}
+	for scheduled_event: Dictionary in _loaded_case.get("scheduled_events", []):
+		var event_copy: Dictionary = scheduled_event.duplicate(true)
+		event_copy["fired"] = false
+		_scheduled_events.append(event_copy)
+
+func _load_case_content_for_active_definition(case_path: String) -> void:
+	var content: Dictionary = _load_case_content(_loaded_case.get("content_files", {}), case_path.get_base_dir())
+	content = _generate_case_variant(content)
+	content = _inject_noise_content(content)
+	var visible_content: Dictionary = _partition_content_by_availability(content)
+	_game_state.set_case_content(visible_content)
+	_game_state.set_case_phase(&"live_window")
+
 func _process_pending_analysis() -> void:
 	if _pending_analyses.is_empty():
 		return
@@ -163,13 +219,13 @@ func _build_analysis_report(assignment: Dictionary) -> Dictionary:
 	var close_to_truth: bool = roll <= accuracy
 	var summary: String = ""
 	if close_to_truth and high_confidence:
-		summary = "High confidence: source account conflicts with phone metadata near airport perimeter."
+		summary = "High confidence: source account conflicts with communications activity in current window."
 	elif close_to_truth:
-		summary = "Medium confidence: timeline has unresolved location mismatch. Verify before committing."
+		summary = "Medium confidence: timeline and source reporting still conflict. Verify before committing."
 	elif high_confidence:
-		summary = "High confidence: meeting appears confirmed at reported contact point."
+		summary = "High confidence: source account appears consistent with current picture."
 	else:
-		summary = "Low confidence: meeting appears confirmed, but supporting data remains thin."
+		summary = "Low confidence: reporting picture still fragmented."
 	return {
 		"analyst_id": assignment.get("analyst_id", &""),
 		"name": assignment.get("name", "Analyst"),
@@ -193,40 +249,65 @@ func _get_analyst(analyst_id: StringName) -> Dictionary:
 
 func _generate_case_variant(content: Dictionary) -> Dictionary:
 	var result: Dictionary = content.duplicate(true)
-	var conflict: bool = _rng.randf() < 0.75
-	var locations: Array = ["Cedar Square cafe", "Old Harbor tea room", "Meridian cafe"]
-	var humint_location: String = locations[_rng.randi_range(0, locations.size() - 1)]
-	var true_location: String = "Airport perimeter"
-	if not conflict:
-		humint_location = true_location
-	_game_state.hidden_truth["humint_sigint_conflict"] = conflict
-	_game_state.hidden_truth["humint_claim_location"] = humint_location
-	_game_state.hidden_truth["sigint_location"] = true_location
+	var patterns: Array[String] = ["location_conflict", "timing_conflict", "identity_conflict"]
+	var selected_pattern: String = patterns[_rng.randi_range(0, patterns.size() - 1)]
+	_game_state.hidden_truth["discrepancy_pattern"] = selected_pattern
 
-	for i in range(result.get("inbox", []).size()):
-		var msg: Dictionary = result["inbox"][i]
-		if String(msg.get("id", "")) == "falcon_initial":
-			msg["body"] = "I'm at %s awaiting the official. Need guidance before the window closes." % humint_location
-			result["inbox"][i] = msg
-	for i in range(result.get("intercepts", []).size()):
-		var entry: Dictionary = result["intercepts"][i]
-		if String(entry.get("id", "")) == "intercept_route_shift":
-			entry["summary"] = "Device associated with Falcon registered near %s at %s." % [true_location.to_lower(), String(entry.get("timestamp", "08:05"))]
-			result["intercepts"][i] = entry
+	var airport: String = "Airport perimeter"
+	var cafe: String = "Cedar Square cafe"
+	var tea_room: String = "Old Harbor tea room"
+
+	match selected_pattern:
+		"location_conflict":
+			var humint_location: String = [cafe, tea_room, "Meridian cafe"][_rng.randi_range(0, 2)]
+			_game_state.hidden_truth["humint_claim_location"] = humint_location
+			_game_state.hidden_truth["sigint_location"] = airport
+			_patch_inbox_body(result, "falcon_initial", "I'm at %s awaiting the official. Need guidance before the window closes." % humint_location)
+			_patch_intercept(result, "intercept_route_shift", "Device associated with Falcon registered near %s at 08:03." % airport.to_lower())
+		"timing_conflict":
+			var humint_time: String = "08:14"
+			var sigint_time: String = "08:03"
+			_game_state.hidden_truth["humint_claim_time"] = humint_time
+			_game_state.hidden_truth["sigint_time"] = sigint_time
+			_game_state.hidden_truth["true_handoff_location"] = airport
+			_patch_inbox_body(result, "falcon_initial", "Contact says official won't arrive until %s. Holding at %s for now." % [humint_time, cafe])
+			_patch_intercept(result, "intercept_route_shift", "Falcon-linked handset active near %s at %s; activity burst ended by 08:08." % [airport.to_lower(), sigint_time])
+		"identity_conflict":
+			_game_state.hidden_truth["humint_claim_contact"] = "Local Official"
+			_game_state.hidden_truth["actual_contact_role"] = "handler_courier_chain"
+			_patch_inbox_body(result, "falcon_initial", "Local Official point of contact is expected in person. Awaiting visual confirmation at cafe.")
+			_patch_intercept(result, "intercept_ambiguous_handoff", "Voice capture: 'Official stays out. Courier takes package to handler by airport gate.'")
+			_patch_nominal_note(result, "local_official", "Recent pattern: official avoids direct meetings and routes contacts through transport staff.")
+
 	return result
 
 func _inject_noise_content(content: Dictionary) -> Dictionary:
 	var result: Dictionary = content.duplicate(true)
-	var noise_inbox: Array = [
+	var noise_inbox_pool: Array[Dictionary] = [
 		{"id":"noise_cable_1","timestamp":"08:04","available_at_minutes":484,"from":"Admin","subject":"Vehicle pool maintenance","body":"Garage requests quarter-hour delay for non-operational pool cars."},
-		{"id":"noise_cable_2","timestamp":"08:10","available_at_minutes":490,"from":"Consular Desk","subject":"Passport printer outage","body":"Local office asks for toner transfer by noon."}
+		{"id":"noise_cable_2","timestamp":"08:10","available_at_minutes":490,"from":"Consular Desk","subject":"Passport printer outage","body":"Local office asks for toner transfer by noon."},
+		{"id":"noise_cable_3","timestamp":"08:13","available_at_minutes":493,"from":"Logistics","subject":"Warehouse inventory request","body":"Regional stores asks for corrected diesel counts before 09:00."},
+		{"id":"noise_cable_4","timestamp":"08:15","available_at_minutes":495,"from":"Protocol","subject":"Reception seating chart","body":"Residence event staff asks for final seating approvals."}
 	]
-	var noise_intercepts: Array = [
+	var noise_intercepts_pool: Array[Dictionary] = [
 		{"id":"noise_rf_market","timestamp":"08:06","available_at_minutes":486,"channel":"RF-CIV","summary":"Taxi dispatch chatter reports sporting-event congestion by riverfront."},
-		{"id":"noise_sigint_customs","timestamp":"08:12","available_at_minutes":492,"channel":"SIGINT-COM","summary":"Customs system sync delay affects container logging for terminal C."}
+		{"id":"noise_sigint_customs","timestamp":"08:12","available_at_minutes":492,"channel":"SIGINT-COM","summary":"Customs system sync delay affects container logging for terminal C."},
+		{"id":"noise_rf_freight","timestamp":"08:14","available_at_minutes":494,"channel":"RF-LOG","summary":"Freight crews discuss delayed refrigeration truck at dock access lane."},
+		{"id":"noise_voip_admin","timestamp":"08:16","available_at_minutes":496,"channel":"VOIP-ADMIN","summary":"Municipal IT helpdesk call about courthouse network reboot window."}
 	]
-	result["inbox"].append_array(noise_inbox)
-	result["intercepts"].append_array(noise_intercepts)
+
+	var critical_inbox: int = result.get("inbox", []).size()
+	var critical_intercepts: int = result.get("intercepts", []).size()
+	var noise_target_inbox: int = int(ceil(float(critical_inbox) * _rng.randf_range(0.45, 0.95)))
+	var noise_target_intercepts: int = int(ceil(float(critical_intercepts) * _rng.randf_range(0.45, 0.95)))
+	noise_target_inbox = clamp(noise_target_inbox, 2, noise_inbox_pool.size())
+	noise_target_intercepts = clamp(noise_target_intercepts, 2, noise_intercepts_pool.size())
+	noise_inbox_pool.shuffle()
+	noise_intercepts_pool.shuffle()
+	for i in range(noise_target_inbox):
+		result["inbox"].append(noise_inbox_pool[i])
+	for j in range(noise_target_intercepts):
+		result["intercepts"].append(noise_intercepts_pool[j])
 	return result
 
 func _process_scheduled_events() -> void:
@@ -327,56 +408,104 @@ func _process_outcome_resolution() -> void:
 func _resolve_outcome(action_id: StringName, commit_time_minutes: float) -> StringName:
 	var decision: Dictionary = _loaded_case.get("decision", {})
 	var transfer_close: float = float(decision.get("transfer_window_close_minutes", 498.0))
-	var has_airport_context: bool = bool(_game_state.has_viewed_evidence(&"intercept_clue") or _game_state.has_viewed_evidence(&"map_airport_cafe"))
-	var has_schedule_context: bool = bool(_game_state.has_viewed_evidence(&"nominal_logistics"))
+	var pattern: String = String(_game_state.hidden_truth.get("discrepancy_pattern", "location_conflict"))
+	var timely: bool = commit_time_minutes <= transfer_close
+	var early: bool = commit_time_minutes <= transfer_close - 3.0
+
 	match String(action_id):
 		"task_surveillance_airport":
-			if commit_time_minutes <= transfer_close:
+			if timely:
 				return &"best"
 			return &"partial"
 		"assign_analyst_verify":
-			if commit_time_minutes <= transfer_close - 3.0 and not has_airport_context:
-				return &"partial"
-			if has_airport_context and has_schedule_context:
+			if not timely:
 				return &"defensive"
+			if early and pattern != "identity_conflict":
+				return &"best"
 			return &"partial"
 		"trust_and_proceed":
+			if pattern == "timing_conflict" and early:
+				return &"partial"
 			return &"failure"
 		"abort_or_delay":
-			return &"defensive"
+			if timely:
+				return &"defensive"
+			return &"failure"
 		_:
 			return &""
 
 func _build_station_report(action_id: StringName, outcome_id: StringName, political_capital_delta: int, outcome_data: Dictionary) -> Dictionary:
-	var reviewed_evidence: Array[String] = []
-	if _game_state.has_viewed_evidence(&"inbox_claim"):
-		reviewed_evidence.append("initial Falcon inbox claim")
-	if _game_state.has_viewed_evidence(&"intercept_clue"):
-		reviewed_evidence.append("SIGINT/intercept traffic")
-	if _game_state.has_viewed_evidence(&"nominal_logistics"):
-		reviewed_evidence.append("nominal logistics links")
-	if _game_state.has_viewed_evidence(&"map_airport_cafe"):
-		reviewed_evidence.append("cafe/airport map markers")
-
-	var evidence_note: String = "Desk review was incomplete before commitment."
-	if reviewed_evidence.size() >= 4:
-		evidence_note = "Review included %s." % ", ".join(reviewed_evidence)
-	elif reviewed_evidence.is_empty():
-		evidence_note = "No evidence panes were reviewed before dispatch."
-	else:
-		evidence_note = "Review included %s; other panes were left unverified." % ", ".join(reviewed_evidence)
-
+	var discrepancy_pattern: String = String(_game_state.hidden_truth.get("discrepancy_pattern", "location_conflict"))
+	var truth_summary: String = _build_truth_summary(discrepancy_pattern)
+	var missed_signals: Array[String] = _build_missed_signals(discrepancy_pattern)
 	return {
 		"case_id": _game_state.active_case_id,
+		"seed": _active_seed,
 		"action_id": action_id,
 		"outcome_id": outcome_id,
 		"political_capital_delta": political_capital_delta,
 		"political_capital_total": _game_state.political_capital,
 		"summary": String(outcome_data.get("summary", "Outcome unavailable.")),
 		"operational_summary": String(outcome_data.get("operational_summary", "No additional operational detail available.")),
-		"evidence_note": evidence_note,
-		"forward_hook": String(outcome_data.get("forward_hook", "Recommend opening follow-on assessment with HQ counterparts."))
+		"forward_hook": String(outcome_data.get("forward_hook", "Recommend opening follow-on assessment with HQ counterparts.")),
+		"ground_truth_summary": truth_summary,
+		"missed_signals": missed_signals
 	}
+
+func _build_truth_summary(pattern: String) -> String:
+	match pattern:
+		"location_conflict":
+			return "Falcon's location report was bait. Real transfer traffic stayed near the airport perimeter."
+		"timing_conflict":
+			return "Falcon's timing report lagged the operation. Activity had already started near the airport window."
+		"identity_conflict":
+			return "Falcon reported direct official contact, but the handoff ran through courier/handler intermediaries."
+		_:
+			return "Ground truth was inconclusive from surviving records."
+
+func _build_missed_signals(pattern: String) -> Array[String]:
+	match pattern:
+		"location_conflict":
+			return [
+				"SIGINT metadata pinned the handset near airport cells while HUMINT cited a cafe meet.",
+				"Liaison schedule traffic still showed residence prep instead of public movement."
+			]
+		"timing_conflict":
+			return [
+				"Intercept timing burst appeared before HUMINT claimed contact would arrive.",
+				"RF logistics chatter indicated transfer closure was earlier than the HUMINT narrative."
+			]
+		"identity_conflict":
+			return [
+				"Voice scrape referenced courier handling instead of official face-to-face contact.",
+				"Nominal notes indicated the official had shifted to proxy intermediaries."
+			]
+		_:
+			return ["No structured missed-signal package available."]
+
+func _patch_inbox_body(content: Dictionary, message_id: String, body: String) -> void:
+	for i in range(content.get("inbox", []).size()):
+		var msg: Dictionary = content["inbox"][i]
+		if String(msg.get("id", "")) == message_id:
+			msg["body"] = body
+			content["inbox"][i] = msg
+			return
+
+func _patch_intercept(content: Dictionary, intercept_id: String, summary: String) -> void:
+	for i in range(content.get("intercepts", []).size()):
+		var entry: Dictionary = content["intercepts"][i]
+		if String(entry.get("id", "")) == intercept_id:
+			entry["summary"] = summary
+			content["intercepts"][i] = entry
+			return
+
+func _patch_nominal_note(content: Dictionary, nominal_id: String, extra_note: String) -> void:
+	for i in range(content.get("nominals", []).size()):
+		var entry: Dictionary = content["nominals"][i]
+		if String(entry.get("id", "")) == nominal_id:
+			entry["notes"] = "%s\n\n%s" % [String(entry.get("notes", "")), extra_note]
+			content["nominals"][i] = entry
+			return
 
 func _load_case_content(content_files: Dictionary, case_root_path: String) -> Dictionary:
 	var content: Dictionary = {}

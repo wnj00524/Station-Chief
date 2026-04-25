@@ -30,6 +30,28 @@ layout_mode = 2
 layout_mode = 2
 text = "Staff Tasking"
 
+[node name="CaseRow" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+
+[node name="CaseSelect" type="OptionButton" parent="Margin/VBox/CaseRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CaseLoadSelected" type="Button" parent="Margin/VBox/CaseRow"]
+layout_mode = 2
+text = "Load"
+
+[node name="CaseRandomRun" type="Button" parent="Margin/VBox/CaseRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Random Run"
+
+[node name="CaseRestartRun" type="Button" parent="Margin/VBox/CaseRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Replay New Seed"
+
 [node name="TaskingRow" type="HBoxContainer" parent="Margin/VBox"]
 layout_mode = 2
 
@@ -88,6 +110,9 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Abort / delay operation"
 
+[connection signal="pressed" from="Margin/VBox/CaseRow/CaseLoadSelected" to="." method="_on_case_load_selected_pressed"]
+[connection signal="pressed" from="Margin/VBox/CaseRow/CaseRandomRun" to="." method="_on_case_random_run_pressed"]
+[connection signal="pressed" from="Margin/VBox/CaseRow/CaseRestartRun" to="." method="_on_case_restart_run_pressed"]
 [connection signal="pressed" from="Margin/VBox/TaskingRow/AssignAnalysis" to="." method="_on_assign_analysis_pressed"]
 [connection signal="pressed" from="Margin/VBox/ActionsGrid/ActionTrust" to="." method="_on_action_trust_pressed"]
 [connection signal="pressed" from="Margin/VBox/ActionsGrid/ActionVerify" to="." method="_on_action_verify_pressed"]

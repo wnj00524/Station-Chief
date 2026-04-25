@@ -6,6 +6,10 @@ extends Control
 @onready var assign_button: Button = %AssignAnalysis
 @onready var reports_value: RichTextLabel = %AnalysisReports
 
+@onready var case_select: OptionButton = %CaseSelect
+@onready var case_random_button: Button = %CaseRandomRun
+@onready var case_restart_button: Button = %CaseRestartRun
+
 @onready var trust_button: Button = %ActionTrust
 @onready var verify_button: Button = %ActionVerify
 @onready var surveil_button: Button = %ActionSurveil
@@ -15,6 +19,7 @@ var _game_state
 var _case_runner
 var _event_bus
 var _target_cache: Array[Dictionary] = []
+var _case_cache: Array[Dictionary] = []
 
 func bind_systems(_clock, game_state, event_bus = null, case_runner = null) -> void:
 	_game_state = game_state
@@ -35,6 +40,7 @@ func bind_systems(_clock, game_state, event_bus = null, case_runner = null) -> v
 	surveil_button.text = "Task airport surveillance"
 	abort_button.text = "Abort / delay operation"
 
+	_rebuild_cases()
 	_rebuild_analysts()
 	_rebuild_targets()
 	_set_buttons_enabled(not _game_state.decision_locked)
@@ -43,9 +49,26 @@ func bind_systems(_clock, game_state, event_bus = null, case_runner = null) -> v
 
 func _on_case_content_loaded(_case_id: StringName) -> void:
 	_rebuild_targets()
+	_rebuild_cases()
+	_set_buttons_enabled(true)
 
 func _on_case_content_updated(_channel: StringName) -> void:
 	_rebuild_targets()
+
+func _rebuild_cases() -> void:
+	if _case_runner == null:
+		return
+	case_select.clear()
+	_case_cache = _case_runner.list_cases()
+	for case_entry: Dictionary in _case_cache:
+		case_select.add_item(String(case_entry.get("title", case_entry.get("id", "Case"))))
+	var selected: int = 0
+	for i in range(_case_cache.size()):
+		if StringName(_case_cache[i].get("id", "")) == _game_state.active_case_id:
+			selected = i
+			break
+	if not _case_cache.is_empty():
+		case_select.select(selected)
 
 func _rebuild_analysts() -> void:
 	analyst_select.clear()
@@ -125,19 +148,39 @@ func _on_case_resolved(outcome_id: StringName, summary: String) -> void:
 	status_value.text = "Result: [%s]\n%s\nPolitical Capital now %d." % [String(outcome_id), summary, _game_state.political_capital]
 
 func _on_station_report_ready(report: Dictionary) -> void:
-	status_value.text = "STATION REPORT\n"
-	status_value.text += "Action: %s\n" % String(report.get("action_id", "unknown")).replace("_", " ")
-	status_value.text += "Outcome: %s\n" % String(report.get("outcome_id", "unknown"))
-	status_value.text += "Political Capital Δ: %+d (Total %d)\n\n" % [
-		int(report.get("political_capital_delta", 0)),
-		int(report.get("political_capital_total", _game_state.political_capital))
+	status_value.text = "Case resolved. Open Debrief for full report.\n"
+	status_value.text += "Action: %s | Outcome: %s | Seed: %s" % [
+		String(report.get("action_id", "unknown")).replace("_", " "),
+		String(report.get("outcome_id", "unknown")),
+		String(report.get("seed", "n/a"))
 	]
-	status_value.text += "%s\n\n" % String(report.get("operational_summary", "No operational summary."))
-	status_value.text += "Evidence note: %s\n" % String(report.get("evidence_note", "No evidence note."))
-	status_value.text += "Forward hook: %s" % String(report.get("forward_hook", "No follow-up hook."))
 
 func _set_buttons_enabled(is_enabled: bool) -> void:
 	trust_button.disabled = not is_enabled
 	verify_button.disabled = not is_enabled
 	surveil_button.disabled = not is_enabled
 	abort_button.disabled = not is_enabled
+
+func _on_case_random_run_pressed() -> void:
+	if _case_runner == null:
+		return
+	if _case_runner.start_random_case():
+		reports_value.text = "No analyst reports yet."
+		status_value.text = "Started randomized case run (seed %d)." % _case_runner.get_active_seed()
+
+func _on_case_restart_run_pressed() -> void:
+	if _case_runner == null:
+		return
+	if _case_runner.restart_active_case_with_new_seed():
+		reports_value.text = "No analyst reports yet."
+		status_value.text = "Restarted active case with seed %d." % _case_runner.get_active_seed()
+
+func _on_case_load_selected_pressed() -> void:
+	if _case_runner == null:
+		return
+	if case_select.selected < 0 or case_select.selected >= _case_cache.size():
+		return
+	var case_id: StringName = StringName(_case_cache[case_select.selected].get("id", ""))
+	if _case_runner.start_case(case_id):
+		reports_value.text = "No analyst reports yet."
+		status_value.text = "Loaded %s with seed %d." % [String(case_id), _case_runner.get_active_seed()]
